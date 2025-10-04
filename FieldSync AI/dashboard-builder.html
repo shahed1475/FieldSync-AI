@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InsightFlow AI - Dashboard Builder</title>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    
+    <!-- GridStack for drag-and-drop -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@9.2.0/dist/gridstack.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/gridstack@9.2.0/dist/gridstack-all.js"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60, #229954);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .main-container {
+            display: flex;
+            height: calc(100vh - 80px);
+        }
+
+        .sidebar {
+            width: 300px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            overflow-y: auto;
+            box-shadow: 2px 0 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar h3 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .widget-palette {
+            display: grid;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+
+        .widget-item {
+            background: white;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            padding: 1rem;
+            cursor: grab;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .widget-item:hover {
+            border-color: #3498db;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.2);
+        }
+
+        .widget-item:active {
+            cursor: grabbing;
+        }
+
+        .widget-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: #3498db;
+        }
+
+        .dashboard-area {
+            flex: 1;
+            padding: 1.5rem;
+            overflow: auto;
+        }
+
+        .grid-stack {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            min-height: 600px;
+            padding: 1rem;
+        }
+
+        .grid-stack-item-content {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            padding: 1rem;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .widget-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .widget-title {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .widget-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .widget-btn {
+            background: none;
+            border: none;
+            color: #7f8c8d;
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .widget-btn:hover {
+            background: #ecf0f1;
+            color: #2c3e50;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+
+        .metric-display {
+            text-align: center;
+            padding: 2rem 1rem;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .ai-recommendations {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .recommendation-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background: white;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .recommendation-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .confidence-badge {
+            background: linear-gradient(135deg, #27ae60, #229954);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .data-source-selector {
+            margin-bottom: 1.5rem;
+        }
+
+        .data-source-selector select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            background: white;
+            font-size: 1rem;
+        }
+
+        .insights-panel {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .insight-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .severity-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .severity-high { background: #e74c3c; color: white; }
+        .severity-medium { background: #f39c12; color: white; }
+        .severity-low { background: #27ae60; color: white; }
+
+        .auto-refresh-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #27ae60;
+            font-size: 0.9rem;
+        }
+
+        .refresh-dot {
+            width: 8px;
+            height: 8px;
+            background: #27ae60;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            z-index: 10;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #ecf0f1;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Insights Styling */
+            .insights-section {
+                margin-bottom: 20px;
+                padding: 15px;
+                background: #f8f9fa;
+                border-radius: 8px;
+                border-left: 4px solid #007bff;
+            }
+
+            .insights-section h4 {
+                margin: 0 0 15px 0;
+                color: #333;
+                font-size: 16px;
+                font-weight: 600;
+            }
+
+            .trend-item, .forecast-item, .anomaly-item, .recommendation-item, .stored-insight-item {
+                background: white;
+                border-radius: 6px;
+                padding: 12px;
+                margin-bottom: 10px;
+                border-left: 3px solid #ddd;
+                transition: all 0.2s ease;
+            }
+
+            .trend-item:hover, .forecast-item:hover, .anomaly-item:hover, 
+            .recommendation-item:hover, .stored-insight-item:hover {
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                transform: translateY(-1px);
+            }
+
+            .trend-item.up { border-left-color: #27ae60; }
+            .trend-item.down { border-left-color: #e74c3c; }
+            .trend-item.stable { border-left-color: #f39c12; }
+
+            .anomaly-item.severity-high { border-left-color: #e74c3c; }
+            .anomaly-item.severity-medium { border-left-color: #f39c12; }
+            .anomaly-item.severity-low { border-left-color: #3498db; }
+
+            .recommendation-item.priority-high { border-left-color: #e74c3c; }
+            .recommendation-item.priority-medium { border-left-color: #f39c12; }
+            .recommendation-item.priority-low { border-left-color: #27ae60; }
+
+            .trend-header, .forecast-header, .anomaly-header, .recommendation-header, .insight-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 8px;
+            }
+
+            .trend-metric, .forecast-metric, .anomaly-type, .recommendation-title, .insight-title {
+                font-weight: 600;
+                color: #333;
+            }
+
+            .trend-direction.up { color: #27ae60; }
+            .trend-direction.down { color: #e74c3c; }
+            .trend-direction.stable { color: #f39c12; }
+
+            .anomaly-severity.high, .insight-severity.high { 
+                background: #e74c3c; 
+                color: white; 
+                padding: 2px 8px; 
+                border-radius: 12px; 
+                font-size: 12px;
+            }
+            .anomaly-severity.medium, .insight-severity.medium { 
+                background: #f39c12; 
+                color: white; 
+                padding: 2px 8px; 
+                border-radius: 12px; 
+                font-size: 12px;
+            }
+            .anomaly-severity.low, .insight-severity.low { 
+                background: #3498db; 
+                color: white; 
+                padding: 2px 8px; 
+                border-radius: 12px; 
+                font-size: 12px;
+            }
+
+            .recommendation-priority.high { 
+                background: #e74c3c; 
+                color: white; 
+                padding: 2px 8px; 
+                border-radius: 12px; 
+                font-size: 12px;
+            }
+            .recommendation-priority.medium { 
+                background: #f39c12; 
+                color: white; 
+                padding: 2px 8px; 
+                border-radius: 12px; 
+                font-size: 12px;
+            }
+            .recommendation-priority.low { 
+                background: #27ae60; 
+                color: white; 
+                padding: 2px 8px; 
+                border-radius: 12px; 
+                font-size: 12px;
+            }
+
+            .trend-description, .forecast-prediction, .anomaly-description, 
+            .recommendation-description, .insight-description {
+                color: #666;
+                font-size: 14px;
+                margin-bottom: 6px;
+            }
+
+            .trend-confidence, .forecast-accuracy, .anomaly-score, 
+            .recommendation-impact, .insight-meta {
+                font-size: 12px;
+                color: #888;
+            }
+
+            .insight-meta {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .anomaly-item {
+                cursor: pointer;
+            }
+
+            .anomaly-item:hover {
+                background: #f0f8ff;
+            }
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+                max-height: 300px;
+            }
+            
+            .header {
+                padding: 1rem;
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .header-controls {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .dashboard-area {
+                padding: 0.75rem;
+            }
+            
+            .sidebar {
+                padding: 1rem;
+            }
+            
+            .widget-palette {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-chart-line"></i> InsightFlow AI Dashboard Builder</h1>
+        <div class="header-controls">
+            <div class="auto-refresh-indicator">
+                <div class="refresh-dot"></div>
+                <span>Auto-refresh: ON</span>
+            </div>
+            <button class="btn btn-secondary" onclick="exportDashboard()">
+                <i class="fas fa-download"></i> Export
+            </button>
+            <button class="btn btn-primary" onclick="saveDashboard()">
+                <i class="fas fa-save"></i> Save Dashboard
+            </button>
+            <button class="btn btn-success" onclick="shareDashboard()">
+                <i class="fas fa-share"></i> Share
+            </button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar">
+            <h3><i class="fas fa-magic"></i> AI Recommendations</h3>
+            <div class="ai-recommendations" id="aiRecommendations">
+                <div class="recommendation-item" onclick="addRecommendedChart('line')">
+                    <div>
+                        <strong>Line Chart</strong>
+                        <div style="font-size: 0.8rem; color: #666;">Perfect for trends</div>
+                    </div>
+                    <div class="confidence-badge">95%</div>
+                </div>
+                <div class="recommendation-item" onclick="addRecommendedChart('bar')">
+                    <div>
+                        <strong>Bar Chart</strong>
+                        <div style="font-size: 0.8rem; color: #666;">Great for comparisons</div>
+                    </div>
+                    <div class="confidence-badge">88%</div>
+                </div>
+                <div class="recommendation-item" onclick="addRecommendedChart('pie')">
+                    <div>
+                        <strong>Pie Chart</strong>
+                        <div style="font-size: 0.8rem; color: #666;">Shows composition</div>
+                    </div>
+                    <div class="confidence-badge">82%</div>
+                </div>
+            </div>
+
+            <h3><i class="fas fa-database"></i> Data Source</h3>
+            <div class="data-source-selector">
+                <select id="dataSourceSelect" onchange="updateRecommendations()">
+                    <option value="sales">Sales Data</option>
+                    <option value="users">User Analytics</option>
+                    <option value="revenue">Revenue Metrics</option>
+                    <option value="inventory">Inventory Data</option>
+                </select>
+            </div>
+
+            <h3><i class="fas fa-puzzle-piece"></i> Widget Palette</h3>
+            <div class="widget-palette">
+                <div class="widget-item" draggable="true" data-widget-type="chart">
+                    <div class="widget-icon"><i class="fas fa-chart-bar"></i></div>
+                    <div><strong>Chart</strong></div>
+                    <div style="font-size: 0.8rem; color: #666;">Visualize data</div>
+                </div>
+                <div class="widget-item" draggable="true" data-widget-type="metric">
+                    <div class="widget-icon"><i class="fas fa-tachometer-alt"></i></div>
+                    <div><strong>Metric</strong></div>
+                    <div style="font-size: 0.8rem; color: #666;">Key numbers</div>
+                </div>
+                <div class="widget-item" draggable="true" data-widget-type="table">
+                    <div class="widget-icon"><i class="fas fa-table"></i></div>
+                    <div><strong>Table</strong></div>
+                    <div style="font-size: 0.8rem; color: #666;">Tabular data</div>
+                </div>
+                <div class="widget-item" draggable="true" data-widget-type="text">
+                    <div class="widget-icon"><i class="fas fa-align-left"></i></div>
+                    <div><strong>Text</strong></div>
+                    <div style="font-size: 0.8rem; color: #666;">Add notes</div>
+                </div>
+            </div>
+
+            <h3><i class="fas fa-lightbulb"></i> AI Insights</h3>
+            <div class="insights-panel" id="insightsPanel">
+                <div class="insight-item">
+                    <div class="severity-badge severity-high">High</div>
+                    <div>
+                        <strong>Revenue Spike Detected</strong>
+                        <div style="font-size: 0.8rem; margin-top: 0.25rem;">
+                            Q4 revenue increased 34% above forecast
+                        </div>
+                    </div>
+                </div>
+                <div class="insight-item">
+                    <div class="severity-badge severity-medium">Med</div>
+                    <div>
+                        <strong>User Engagement Trend</strong>
+                        <div style="font-size: 0.8rem; margin-top: 0.25rem;">
+                            Daily active users showing steady 12% growth
+                        </div>
+                    </div>
+                </div>
+                <div class="insight-item">
+                    <div class="severity-badge severity-low">Low</div>
+                    <div>
+                        <strong>Seasonal Pattern</strong>
+                        <div style="font-size: 0.8rem; margin-top: 0.25rem;">
+                            Expected holiday season uptick beginning
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-area">
+            <div class="grid-stack" id="dashboardGrid"></div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize GridStack
+        let grid;
+        let widgetCounter = 0;
+        let charts = {};
+        let autoRefreshInterval;
+
+        // Sample data for different chart types
+        const sampleData = {
+            sales: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Sales Revenue',
+                    data: [12000, 19000, 15000, 25000, 22000, 30000],
+                    borderColor: '#3498db',
+                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            users: {
+                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                datasets: [{
+                    label: 'Active Users',
+                    data: [1200, 1900, 1500, 2500],
+                    backgroundColor: ['#e74c3c', '#f39c12', '#27ae60', '#3498db']
+                }]
+            },
+            revenue: {
+                labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+                datasets: [{
+                    label: 'Revenue',
+                    data: [45000, 52000, 48000, 61000],
+                    backgroundColor: '#27ae60'
+                }]
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeGrid();
+            startAutoRefresh();
+            initializeRealTimeAnalytics();
+            
+            // Load predictive analytics and stored insights
+            loadPredictiveAnalytics('sales_data');
+            loadStoredInsights();
+            
+            // Add some default widgets
+            setTimeout(() => {
+                addWidget('chart', 'Sales Trend', { chartType: 'line', dataSource: 'sales' });
+                addWidget('metric', 'Total Revenue', { value: '$134.5K', change: '+23.5%' });
+                addWidget('chart', 'User Distribution', { chartType: 'pie', dataSource: 'users' });
+            }, 500);
+        });
+
+        function initializeGrid() {
+            grid = GridStack.init({
+                cellHeight: 100,
+                verticalMargin: 10,
+                horizontalMargin: 10,
+                animate: true,
+                float: true,
+                resizable: {
+                    handles: 'e, se, s, sw, w'
+                }
+            });
+
+            // Handle widget removal
+            grid.on('removed', function(event, items) {
+                items.forEach(item => {
+                    const widgetId = item.el.getAttribute('gs-id');
+                    if (charts[widgetId]) {
+                        charts[widgetId].destroy();
+                        delete charts[widgetId];
+                    }
+                });
+            });
+        }
+
+        function addWidget(type, title, config = {}) {
+            widgetCounter++;
+            const widgetId = `widget-${widgetCounter}`;
+            
+            let content = '';
+            let width = 4, height = 3;
+
+            switch (type) {
+                case 'chart':
+                    width = 6;
+                    height = 4;
+                    content = `
+                        <div class="widget-header">
+                            <div class="widget-title">${title}</div>
+                            <div class="widget-controls">
+                                <button class="widget-btn" onclick="configureWidget('${widgetId}')" title="Configure">
+                                    <i class="fas fa-cog"></i>
+                                </button>
+                                <button class="widget-btn" onclick="removeWidget('${widgetId}')" title="Remove">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="chart-${widgetId}"></canvas>
+                        </div>
+                        <div class="ai-summary" style="margin-top: 1rem; padding: 0.75rem; background: #f8f9fa; border-radius: 6px; font-size: 0.9rem; color: #666;">
+                            <i class="fas fa-robot"></i> <strong>AI Summary:</strong> ${getAISummary(config.chartType)}
+                        </div>
+                    `;
+                    break;
+                case 'metric':
+                    width = 3;
+                    height = 2;
+                    content = `
+                        <div class="widget-header">
+                            <div class="widget-title">${title}</div>
+                            <div class="widget-controls">
+                                <button class="widget-btn" onclick="removeWidget('${widgetId}')" title="Remove">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="metric-display">
+                            <div class="metric-value">${config.value || '$0'}</div>
+                            <div class="metric-label">${title}</div>
+                            ${config.change ? `<div style="color: #27ae60; font-weight: 600; margin-top: 0.5rem;">${config.change}</div>` : ''}
+                        </div>
+                    `;
+                    break;
+                case 'table':
+                    width = 8;
+                    height = 4;
+                    content = `
+                        <div class="widget-header">
+                            <div class="widget-title">${title}</div>
+                            <div class="widget-controls">
+                                <button class="widget-btn" onclick="removeWidget('${widgetId}')" title="Remove">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: #f8f9fa;">
+                                        <th style="padding: 0.75rem; text-align: left; border-bottom: 1px solid #dee2e6;">Product</th>
+                                        <th style="padding: 0.75rem; text-align: left; border-bottom: 1px solid #dee2e6;">Sales</th>
+                                        <th style="padding: 0.75rem; text-align: left; border-bottom: 1px solid #dee2e6;">Growth</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td style="padding: 0.5rem;">Product A</td><td style="padding: 0.5rem;">$12,500</td><td style="padding: 0.5rem; color: #27ae60;">+15%</td></tr>
+                                    <tr><td style="padding: 0.5rem;">Product B</td><td style="padding: 0.5rem;">$8,300</td><td style="padding: 0.5rem; color: #e74c3c;">-5%</td></tr>
+                                    <tr><td style="padding: 0.5rem;">Product C</td><td style="padding: 0.5rem;">$15,700</td><td style="padding: 0.5rem; color: #27ae60;">+22%</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                    break;
+                case 'text':
+                    width = 4;
+                    height = 2;
+                    content = `
+                        <div class="widget-header">
+                            <div class="widget-title">${title}</div>
+                            <div class="widget-controls">
+                                <button class="widget-btn" onclick="removeWidget('${widgetId}')" title="Remove">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div style="padding: 1rem;">
+                            <p>This is a text widget. You can add notes, descriptions, or any custom content here.</p>
+                        </div>
+                    `;
+                    break;
+            }
+
+            const widget = grid.addWidget(`<div gs-id="${widgetId}">${content}</div>`, {
+                w: width,
+                h: height
+            });
+
+            // Initialize chart if it's a chart widget
+            if (type === 'chart') {
+                setTimeout(() => {
+                    createChart(widgetId, config.chartType || 'line', config.dataSource || 'sales');
+                }, 100);
+            }
+
+            return widgetId;
+        }
+
+        function createChart(widgetId, chartType, dataSource) {
+            const canvas = document.getElementById(`chart-${widgetId}`);
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            const data = sampleData[dataSource] || sampleData.sales;
+
+            let chartConfig = {
+                type: chartType,
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                        }
+                    },
+                    scales: chartType !== 'pie' && chartType !== 'doughnut' ? {
+                        y: {
+                            beginAtZero: true
+                        }
+                    } : {}
+                }
+            };
+
+            // Destroy existing chart if it exists
+            if (charts[widgetId]) {
+                charts[widgetId].destroy();
+            }
+
+            charts[widgetId] = new Chart(ctx, chartConfig);
+            
+            // Set up real-time stream ID for this chart
+            canvas.dataset.streamId = `${dataSource}_${chartType}_${widgetId}`;
+            
+            // Subscribe to real-time updates for this chart
+            subscribeToRealTimeStream(canvas.dataset.streamId, {
+                dataSource: dataSource,
+                chartType: chartType
+            });
+        }
+
+        function addRecommendedChart(chartType) {
+            const titles = {
+                line: 'Trend Analysis',
+                bar: 'Performance Comparison',
+                pie: 'Distribution Overview'
+            };
+            
+            addWidget('chart', titles[chartType], { chartType, dataSource: 'sales' });
+        }
+
+        function removeWidget(widgetId) {
+            const element = document.querySelector(`[gs-id="${widgetId}"]`);
+            if (element) {
+                // Unsubscribe from real-time updates if it's a chart
+                const canvas = element.querySelector('canvas');
+                if (canvas && canvas.dataset.streamId) {
+                    unsubscribeFromRealTimeStream(canvas.dataset.streamId);
+                }
+                
+                grid.removeWidget(element);
+            }
+        }
+
+        function configureWidget(widgetId) {
+            alert(`Configuration panel for widget ${widgetId} would open here.`);
+        }
+
+        function updateRecommendations() {
+            const dataSource = document.getElementById('dataSourceSelect').value;
+            // Update AI recommendations based on selected data source
+            console.log('Updating recommendations for:', dataSource);
+        }
+
+        function getAISummary(chartType) {
+            const summaries = {
+                line: "Revenue shows consistent upward trend with 23% growth over the period, indicating strong business performance.",
+                bar: "Q4 performance exceeded expectations by 15%, driven primarily by increased customer acquisition.",
+                pie: "User distribution is well-balanced across segments, with mobile users representing the largest portion at 45%."
+            };
+            return summaries[chartType] || "Data analysis shows positive trends with opportunities for optimization.";
+        }
+
+        // Real-time Analytics Integration
+        function initializeRealTimeAnalytics() {
+            // Connect to WebSocket for real-time updates
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/analytics`;
+            
+            try {
+                window.ws = new WebSocket(wsUrl);
+                
+                window.ws.onopen = () => {
+                    console.log('Connected to real-time analytics');
+                    showNotification('Connected to real-time analytics', 'success');
+                };
+                
+                window.ws.onmessage = (event) => {
+                    const message = JSON.parse(event.data);
+                    handleRealTimeMessage(message);
+                };
+                
+                window.ws.onclose = () => {
+                    console.log('Disconnected from real-time analytics');
+                    showNotification('Disconnected from real-time analytics', 'warning');
+                    
+                    // Attempt to reconnect after 5 seconds
+                    setTimeout(() => {
+                        initializeRealTimeAnalytics();
+                    }, 5000);
+                };
+                
+                window.ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    showNotification('Real-time connection error', 'error');
+                };
+            } catch (error) {
+                console.error('Failed to initialize WebSocket:', error);
+            }
+        }
+
+        function handleRealTimeMessage(message) {
+            switch (message.type) {
+                case 'connection_established':
+                    console.log('Real-time connection established:', message.connectionId);
+                    break;
+                    
+                case 'data_update':
+                    updateChartWithRealTimeData(message.streamId, message.data);
+                    break;
+                    
+                case 'data_point':
+                    addRealTimeDataPoint(message.streamId, message.dataPoint);
+                    break;
+                    
+                case 'error':
+                    console.error('Real-time error:', message.message);
+                    showNotification(`Real-time error: ${message.message}`, 'error');
+                    break;
+                    
+                default:
+                    console.log('Unknown real-time message:', message);
+            }
+        }
+
+        function updateChartWithRealTimeData(streamId, data) {
+            // Find charts that should be updated with this stream
+            Object.keys(charts).forEach(widgetId => {
+                const chart = charts[widgetId];
+                if (chart && chart.canvas.dataset.streamId === streamId) {
+                    // Update chart data
+                    const labels = data.map(point => new Date(point.timestamp).toLocaleTimeString());
+                    const values = data.map(point => point.value);
+                    
+                    chart.data.labels = labels;
+                    chart.data.datasets[0].data = values;
+                    chart.update('none'); // Update without animation for real-time
+                }
+            });
+        }
+
+        function addRealTimeDataPoint(streamId, dataPoint) {
+            Object.keys(charts).forEach(widgetId => {
+                const chart = charts[widgetId];
+                if (chart && chart.canvas.dataset.streamId === streamId) {
+                    // Add new data point
+                    chart.data.labels.push(new Date(dataPoint.timestamp).toLocaleTimeString());
+                    chart.data.datasets[0].data.push(dataPoint.value);
+                    
+                    // Keep only last 50 points for performance
+                    if (chart.data.labels.length > 50) {
+                        chart.data.labels.shift();
+                        chart.data.datasets[0].data.shift();
+                    }
+                    
+                    chart.update('none');
+                }
+            });
+        }
+
+        function subscribeToRealTimeStream(streamId, filters = {}) {
+            if (window.ws && window.ws.readyState === WebSocket.OPEN) {
+                window.ws.send(JSON.stringify({
+                    type: 'subscribe',
+                    streamId,
+                    filters,
+                    updateInterval: 2000 // 2 seconds
+                }));
+            }
+        }
+
+        function unsubscribeFromRealTimeStream(streamId) {
+            if (window.ws && window.ws.readyState === WebSocket.OPEN) {
+                window.ws.send(JSON.stringify({
+                    type: 'unsubscribe',
+                    streamId
+                }));
+            }
+        }
+
+        // Predictive Analytics Integration
+        async function loadPredictiveAnalytics(dataSource) {
+            try {
+                const response = await fetch(`/api/visualization/predictive-analysis`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        dataSource: dataSource,
+                        timeRange: '30d',
+                        includeForecasts: true,
+                        includeAnomalies: true
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const analysis = await response.json();
+                displayPredictiveInsights(analysis);
+                return analysis;
+            } catch (error) {
+                console.error('Error loading predictive analytics:', error);
+                showNotification('Failed to load predictive analytics', 'error');
+                return null;
+            }
+        }
+
+        function displayPredictiveInsights(analysis) {
+            const insightsContainer = document.getElementById('ai-insights');
+            if (!insightsContainer) return;
+
+            // Clear existing insights
+            insightsContainer.innerHTML = '<h3><i class="fas fa-brain"></i> AI Insights</h3>';
+
+            // Display trends
+            if (analysis.trends && analysis.trends.length > 0) {
+                const trendsSection = document.createElement('div');
+                trendsSection.className = 'insights-section';
+                trendsSection.innerHTML = `
+                    <h4><i class="fas fa-chart-line"></i> Trend Analysis</h4>
+                    <div class="trends-list"></div>
+                `;
+                
+                const trendsList = trendsSection.querySelector('.trends-list');
+                analysis.trends.forEach(trend => {
+                    const trendItem = document.createElement('div');
+                    trendItem.className = `trend-item ${trend.direction}`;
+                    trendItem.innerHTML = `
+                        <div class="trend-header">
+                            <span class="trend-metric">${trend.metric}</span>
+                            <span class="trend-direction ${trend.direction}">
+                                <i class="fas fa-arrow-${trend.direction === 'up' ? 'up' : 'down'}"></i>
+                                ${trend.change}%
+                            </span>
+                        </div>
+                        <div class="trend-description">${trend.description}</div>
+                        <div class="trend-confidence">Confidence: ${Math.round(trend.confidence * 100)}%</div>
+                    `;
+                    trendsList.appendChild(trendItem);
+                });
+                
+                insightsContainer.appendChild(trendsSection);
+            }
+
+            // Display forecasts
+            if (analysis.forecasts && analysis.forecasts.length > 0) {
+                const forecastsSection = document.createElement('div');
+                forecastsSection.className = 'insights-section';
+                forecastsSection.innerHTML = `
+                    <h4><i class="fas fa-crystal-ball"></i> Forecasts</h4>
+                    <div class="forecasts-list"></div>
+                `;
+                
+                const forecastsList = forecastsSection.querySelector('.forecasts-list');
+                analysis.forecasts.forEach(forecast => {
+                    const forecastItem = document.createElement('div');
+                    forecastItem.className = 'forecast-item';
+                    forecastItem.innerHTML = `
+                        <div class="forecast-header">
+                            <span class="forecast-metric">${forecast.metric}</span>
+                            <span class="forecast-horizon">${forecast.horizon}</span>
+                        </div>
+                        <div class="forecast-prediction">
+                            Predicted: ${forecast.predictedValue} 
+                            (${forecast.confidenceInterval.lower} - ${forecast.confidenceInterval.upper})
+                        </div>
+                        <div class="forecast-accuracy">Model: ${forecast.model} | Accuracy: ${Math.round(forecast.accuracy * 100)}%</div>
+                    `;
+                    forecastsList.appendChild(forecastItem);
+                });
+                
+                insightsContainer.appendChild(forecastsSection);
+            }
+
+            // Display anomalies
+            if (analysis.anomalies && analysis.anomalies.length > 0) {
+                const anomaliesSection = document.createElement('div');
+                anomaliesSection.className = 'insights-section';
+                anomaliesSection.innerHTML = `
+                    <h4><i class="fas fa-exclamation-triangle"></i> Anomalies Detected</h4>
+                    <div class="anomalies-list"></div>
+                `;
+                
+                const anomaliesList = anomaliesSection.querySelector('.anomalies-list');
+                analysis.anomalies.forEach(anomaly => {
+                    const anomalyItem = document.createElement('div');
+                    anomalyItem.className = `anomaly-item severity-${anomaly.severity}`;
+                    anomalyItem.innerHTML = `
+                        <div class="anomaly-header">
+                            <span class="anomaly-type">${anomaly.type}</span>
+                            <span class="anomaly-severity ${anomaly.severity}">${anomaly.severity.toUpperCase()}</span>
+                        </div>
+                        <div class="anomaly-description">${anomaly.description}</div>
+                        <div class="anomaly-timestamp">${new Date(anomaly.timestamp).toLocaleString()}</div>
+                        <div class="anomaly-score">Score: ${anomaly.score.toFixed(2)}</div>
+                    `;
+                    anomalyItem.addEventListener('click', () => {
+                        storeInsight(anomaly);
+                    });
+                    anomaliesList.appendChild(anomalyItem);
+                });
+                
+                insightsContainer.appendChild(anomaliesSection);
+            }
+
+            // Display recommendations
+            if (analysis.recommendations && analysis.recommendations.length > 0) {
+                const recommendationsSection = document.createElement('div');
+                recommendationsSection.className = 'insights-section';
+                recommendationsSection.innerHTML = `
+                    <h4><i class="fas fa-lightbulb"></i> Recommendations</h4>
+                    <div class="recommendations-list"></div>
+                `;
+                
+                const recommendationsList = recommendationsSection.querySelector('.recommendations-list');
+                analysis.recommendations.forEach(recommendation => {
+                    const recommendationItem = document.createElement('div');
+                    recommendationItem.className = `recommendation-item priority-${recommendation.priority}`;
+                    recommendationItem.innerHTML = `
+                        <div class="recommendation-header">
+                            <span class="recommendation-title">${recommendation.title}</span>
+                            <span class="recommendation-priority ${recommendation.priority}">${recommendation.priority.toUpperCase()}</span>
+                        </div>
+                        <div class="recommendation-description">${recommendation.description}</div>
+                        <div class="recommendation-impact">Expected Impact: ${recommendation.expectedImpact}</div>
+                    `;
+                    recommendationsList.appendChild(recommendationItem);
+                });
+                
+                insightsContainer.appendChild(recommendationsSection);
+            }
+        }
+
+        async function storeInsight(insight) {
+            try {
+                const response = await fetch('/api/visualization/insights', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        type: insight.type,
+                        title: insight.description,
+                        description: insight.description,
+                        severity: insight.severity,
+                        confidence: insight.score,
+                        metadata: {
+                            timestamp: insight.timestamp,
+                            dataSource: insight.dataSource,
+                            metric: insight.metric
+                        }
+                    })
+                });
+                
+                if (response.ok) {
+                    showNotification('Insight stored successfully', 'success');
+                } else {
+                    throw new Error('Failed to store insight');
+                }
+            } catch (error) {
+                console.error('Error storing insight:', error);
+                showNotification('Failed to store insight', 'error');
+            }
+        }
+
+        async function loadStoredInsights() {
+            try {
+                const response = await fetch('/api/visualization/insights');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const insights = await response.json();
+                displayStoredInsights(insights);
+                return insights;
+            } catch (error) {
+                console.error('Error loading stored insights:', error);
+                showNotification('Failed to load stored insights', 'error');
+                return [];
+            }
+        }
+
+        function displayStoredInsights(insights) {
+            const insightsContainer = document.getElementById('ai-insights');
+            if (!insightsContainer || !insights.length) return;
+
+            const storedSection = document.createElement('div');
+            storedSection.className = 'insights-section';
+            storedSection.innerHTML = `
+                <h4><i class="fas fa-database"></i> Stored Insights</h4>
+                <div class="stored-insights-list"></div>
+            `;
+            
+            const storedList = storedSection.querySelector('.stored-insights-list');
+            insights.slice(0, 10).forEach(insight => { // Show only latest 10
+                const insightItem = document.createElement('div');
+                insightItem.className = `stored-insight-item severity-${insight.severity}`;
+                insightItem.innerHTML = `
+                    <div class="insight-header">
+                        <span class="insight-title">${insight.title}</span>
+                        <span class="insight-severity ${insight.severity}">${insight.severity.toUpperCase()}</span>
+                    </div>
+                    <div class="insight-description">${insight.description}</div>
+                    <div class="insight-meta">
+                        <span class="insight-date">${new Date(insight.created_at).toLocaleDateString()}</span>
+                        <span class="insight-confidence">Confidence: ${Math.round(insight.confidence * 100)}%</span>
+                    </div>
+                `;
+                storedList.appendChild(insightItem);
+            });
+            
+            insightsContainer.appendChild(storedSection);
+        }
+
+        function showNotification(message, type) {
+            // Simple notification system
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 12px 20px;
+                border-radius: 6px;
+                color: white;
+                font-weight: 600;
+                z-index: 10000;
+                transition: all 0.3s ease;
+            `;
+            
+            switch (type) {
+                case 'success':
+                    notification.style.background = '#27ae60';
+                    break;
+                case 'warning':
+                    notification.style.background = '#f39c12';
+                    break;
+                case 'error':
+                    notification.style.background = '#e74c3c';
+                    break;
+                default:
+                    notification.style.background = '#3498db';
+            }
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        function startAutoRefresh() {
+            autoRefreshInterval = setInterval(() => {
+                // Simulate data refresh
+                Object.keys(charts).forEach(widgetId => {
+                    if (charts[widgetId]) {
+                        // Add some randomness to simulate real-time data
+                        const chart = charts[widgetId];
+                        if (chart.data.datasets[0].data) {
+                            chart.data.datasets[0].data = chart.data.datasets[0].data.map(value => 
+                                Math.max(0, value + (Math.random() - 0.5) * value * 0.1)
+                            );
+                            chart.update('none');
+                        }
+                    }
+                });
+            }, 30000); // Refresh every 30 seconds
+        }
+
+        function saveDashboard() {
+            const layout = grid.save();
+            console.log('Saving dashboard layout:', layout);
+            
+            // Show loading
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            btn.disabled = true;
+            
+            setTimeout(() => {
+                btn.innerHTML = '<i class="fas fa-check"></i> Saved!';
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }, 1000);
+            }, 1500);
+        }
+
+        function exportDashboard() {
+            const options = ['PDF', 'PNG', 'CSV Data'];
+            const choice = prompt(`Export options:\n1. PDF Report\n2. PNG Image\n3. CSV Data\n\nEnter choice (1-3):`);
+            
+            if (choice) {
+                alert(`Exporting dashboard as ${options[parseInt(choice) - 1]}...`);
+            }
+        }
+
+        function shareDashboard() {
+            const shareUrl = `${window.location.origin}/shared/dashboard/${Date.now()}`;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: 'InsightFlow AI Dashboard',
+                    text: 'Check out this interactive dashboard',
+                    url: shareUrl
+                });
+            } else {
+                // Fallback for browsers without Web Share API
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                    alert('Dashboard link copied to clipboard!');
+                });
+            }
+        }
+
+        // Drag and drop functionality for widget palette
+        document.querySelectorAll('.widget-item').forEach(item => {
+            item.addEventListener('dragstart', function(e) {
+                e.dataTransfer.setData('text/plain', this.getAttribute('data-widget-type'));
+            });
+        });
+
+        document.getElementById('dashboardGrid').addEventListener('dragover', function(e) {
+            e.preventDefault();
+        });
+
+        document.getElementById('dashboardGrid').addEventListener('drop', function(e) {
+            e.preventDefault();
+            const widgetType = e.dataTransfer.getData('text/plain');
+            if (widgetType) {
+                const titles = {
+                    chart: 'New Chart',
+                    metric: 'New Metric',
+                    table: 'Data Table',
+                    text: 'Text Widget'
+                };
+                addWidget(widgetType, titles[widgetType]);
+            }
+        });
+    </script>
+</body>
+</html>

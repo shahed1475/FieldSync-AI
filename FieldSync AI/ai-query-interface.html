@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InsightFlow AI - Natural Language Query Interface</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .query-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .results-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .panel-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #4a5568;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .query-input-section {
+            margin-bottom: 25px;
+        }
+
+        .query-textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 16px;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+
+        .query-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .query-examples {
+            margin-bottom: 20px;
+        }
+
+        .example-queries {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .example-query {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 8px 15px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .example-query:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .data-source-selector {
+            margin-bottom: 20px;
+        }
+
+        .data-source-select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            background: white;
+        }
+
+        .query-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .option-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .submit-button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .submit-button:hover {
+            transform: translateY(-2px);
+        }
+
+        .submit-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .progress-section {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-message {
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+        }
+
+        .results-content {
+            min-height: 400px;
+        }
+
+        .results-empty {
+            text-align: center;
+            color: #a0aec0;
+            font-size: 18px;
+            margin-top: 100px;
+        }
+
+        .results-metadata {
+            background: #f7fafc;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .metadata-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .sql-section {
+            margin-bottom: 20px;
+        }
+
+        .sql-code {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .results-table th,
+        .results-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .results-table th {
+            background: #f7fafc;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .results-table tr:hover {
+            background: #f7fafc;
+        }
+
+        .error-message {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #e53e3e;
+        }
+
+        .success-message {
+            background: #c6f6d5;
+            color: #22543d;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #38a169;
+        }
+
+        .chart-container {
+            margin-top: 20px;
+            height: 300px;
+            background: #f7fafc;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #a0aec0;
+        }
+
+        .streaming-indicator {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+            padding: 10px;
+            background: #e6fffa;
+            border-radius: 8px;
+            border-left: 4px solid #38b2ac;
+        }
+
+        .streaming-dot {
+            width: 8px;
+            height: 8px;
+            background: #38b2ac;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .history-section {
+            grid-column: 1 / -1;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .history-item {
+            border-bottom: 1px solid #e2e8f0;
+            padding: 15px 0;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .history-item:hover {
+            background: #f7fafc;
+        }
+
+        .history-query {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .history-meta {
+            font-size: 12px;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .query-options {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 InsightFlow AI</h1>
+            <p>Ask questions about your data in plain English</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Query Input Panel -->
+            <div class="query-panel">
+                <h2 class="panel-title">
+                    💬 Natural Language Query
+                </h2>
+
+                <div class="query-input-section">
+                    <textarea 
+                        id="queryInput" 
+                        class="query-textarea" 
+                        placeholder="Ask a question about your data... 
+
+Examples:
+• Show me sales by month for this year
+• Which customers have the highest revenue?
+• What are the top 10 products by profit margin?
+• How many orders were placed last week?"
+                    ></textarea>
+                </div>
+
+                <div class="query-examples">
+                    <label><strong>Quick Examples:</strong></label>
+                    <div class="example-queries">
+                        <span class="example-query" onclick="setQuery('Show me total sales by month for this year')">Monthly Sales</span>
+                        <span class="example-query" onclick="setQuery('Which customers have spent the most money?')">Top Customers</span>
+                        <span class="example-query" onclick="setQuery('What are our best selling products?')">Best Products</span>
+                        <span class="example-query" onclick="setQuery('Show me revenue trends over the last 6 months')">Revenue Trends</span>
+                        <span class="example-query" onclick="setQuery('How many new customers did we get this quarter?')">New Customers</span>
+                    </div>
+                </div>
+
+                <div class="data-source-selector">
+                    <label for="dataSource"><strong>Data Source:</strong></label>
+                    <select id="dataSource" class="data-source-select">
+                        <option value="">Select a data source...</option>
+                        <option value="1">Sales Database (PostgreSQL)</option>
+                        <option value="2">Customer CRM (MySQL)</option>
+                        <option value="3">E-commerce Store (Shopify)</option>
+                        <option value="4">Payment Data (Stripe)</option>
+                        <option value="5">Financial Data (QuickBooks)</option>
+                        <option value="6">Marketing Data (Google Sheets)</option>
+                    </select>
+                </div>
+
+                <div class="query-options">
+                    <label class="option-checkbox">
+                        <input type="checkbox" id="explainSQL" checked>
+                        Show generated SQL
+                    </label>
+                    <label class="option-checkbox">
+                        <input type="checkbox" id="streamResults">
+                        Stream results (for large queries)
+                    </label>
+                    <label class="option-checkbox">
+                        <input type="checkbox" id="cacheResults" checked>
+                        Cache results
+                    </label>
+                </div>
+
+                <button id="submitQuery" class="submit-button" onclick="executeQuery()">
+                    🚀 Execute Query
+                </button>
+
+                <div id="progressSection" class="progress-section">
+                    <div class="progress-bar">
+                        <div id="progressFill" class="progress-fill"></div>
+                    </div>
+                    <div id="progressMessage" class="progress-message">Initializing...</div>
+                </div>
+
+                <div id="streamingIndicator" class="streaming-indicator">
+                    <div class="streaming-dot"></div>
+                    <span>Streaming results in real-time...</span>
+                </div>
+            </div>
+
+            <!-- Results Panel -->
+            <div class="results-panel">
+                <h2 class="panel-title">
+                    📊 Query Results
+                </h2>
+
+                <div id="resultsContent" class="results-content">
+                    <div class="results-empty">
+                        <p>🔍 Enter a query to see results here</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Query History -->
+        <div class="history-section">
+            <h2 class="panel-title">
+                📝 Query History
+            </h2>
+            <div id="queryHistory">
+                <p style="color: #a0aec0; text-align: center; margin-top: 20px;">No queries executed yet</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentEventSource = null;
+        let queryHistory = JSON.parse(localStorage.getItem('queryHistory') || '[]');
+
+        // Initialize the interface
+        document.addEventListener('DOMContentLoaded', function() {
+            loadQueryHistory();
+        });
+
+        function setQuery(query) {
+            document.getElementById('queryInput').value = query;
+        }
+
+        function executeQuery() {
+            const query = document.getElementById('queryInput').value.trim();
+            const dataSourceId = document.getElementById('dataSource').value;
+            const explainSQL = document.getElementById('explainSQL').checked;
+            const streamResults = document.getElementById('streamResults').checked;
+            const cacheResults = document.getElementById('cacheResults').checked;
+
+            if (!query) {
+                showError('Please enter a query');
+                return;
+            }
+
+            if (!dataSourceId) {
+                showError('Please select a data source');
+                return;
+            }
+
+            // Disable submit button and show progress
+            const submitButton = document.getElementById('submitQuery');
+            submitButton.disabled = true;
+            submitButton.textContent = '⏳ Processing...';
+
+            // Clear previous results
+            document.getElementById('resultsContent').innerHTML = '';
+
+            if (streamResults) {
+                executeStreamingQuery(query, dataSourceId, explainSQL, cacheResults);
+            } else {
+                executeRegularQuery(query, dataSourceId, explainSQL, cacheResults);
+            }
+        }
+
+        function executeRegularQuery(query, dataSourceId, explainSQL, cacheResults) {
+            showProgress(0.1, 'Sending query to AI engine...');
+
+            fetch('/api/ai/query', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${getAuthToken()}`
+                },
+                body: JSON.stringify({
+                    query,
+                    dataSourceId,
+                    explain: explainSQL,
+                    useCache: cacheResults
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideProgress();
+                if (data.success) {
+                    displayResults(data);
+                    addToHistory(query, data);
+                } else {
+                    showError(data.error || 'Query execution failed');
+                }
+            })
+            .catch(error => {
+                hideProgress();
+                showError('Network error: ' + error.message);
+            })
+            .finally(() => {
+                resetSubmitButton();
+            });
+        }
+
+        function executeStreamingQuery(query, dataSourceId, explainSQL, cacheResults) {
+            showProgress(0.1, 'Initializing streaming query...');
+            document.getElementById('streamingIndicator').style.display = 'flex';
+
+            // Close any existing EventSource
+            if (currentEventSource) {
+                currentEventSource.close();
+            }
+
+            const url = new URL('/api/ai/query/stream', window.location.origin);
+            url.searchParams.append('query', query);
+            url.searchParams.append('dataSourceId', dataSourceId);
+            url.searchParams.append('explain', explainSQL);
+            url.searchParams.append('useCache', cacheResults);
+
+            currentEventSource = new EventSource(url);
+
+            currentEventSource.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    if (data.progress !== undefined) {
+                        showProgress(data.progress, data.message);
+                    }
+
+                    if (data.step === 'completed' && data.results) {
+                        displayResults(data.results);
+                        addToHistory(query, data.results);
+                        currentEventSource.close();
+                        document.getElementById('streamingIndicator').style.display = 'none';
+                        hideProgress();
+                        resetSubmitButton();
+                    }
+
+                    if (data.step === 'error') {
+                        showError(data.message || 'Streaming query failed');
+                        currentEventSource.close();
+                        document.getElementById('streamingIndicator').style.display = 'none';
+                        hideProgress();
+                        resetSubmitButton();
+                    }
+                } catch (e) {
+                    console.error('Error parsing streaming data:', e);
+                }
+            };
+
+            currentEventSource.onerror = function(event) {
+                showError('Streaming connection error');
+                currentEventSource.close();
+                document.getElementById('streamingIndicator').style.display = 'none';
+                hideProgress();
+                resetSubmitButton();
+            };
+        }
+
+        function displayResults(data) {
+            const resultsContent = document.getElementById('resultsContent');
+            let html = '';
+
+            // Show metadata
+            if (data.executionTime || data.rowCount !== undefined) {
+                html += '<div class="results-metadata">';
+                if (data.executionTime) {
+                    html += `<div class="metadata-item"><span>Execution Time:</span><span>${data.executionTime}ms</span></div>`;
+                }
+                if (data.rowCount !== undefined) {
+                    html += `<div class="metadata-item"><span>Rows Returned:</span><span>${data.rowCount}</span></div>`;
+                }
+                if (data.dataSource) {
+                    html += `<div class="metadata-item"><span>Data Source:</span><span>${data.dataSource.name || data.dataSource.type}</span></div>`;
+                }
+                if (data.cached) {
+                    html += `<div class="metadata-item"><span>Cache:</span><span>✅ Results from cache</span></div>`;
+                }
+                html += '</div>';
+            }
+
+            // Show SQL if requested
+            if (data.sql) {
+                html += '<div class="sql-section">';
+                html += '<h3>Generated SQL:</h3>';
+                html += `<div class="sql-code">${escapeHtml(data.sql)}</div>`;
+                html += '</div>';
+            }
+
+            // Show results table
+            if (data.data && data.data.length > 0) {
+                html += '<div class="success-message">Query executed successfully!</div>';
+                html += '<table class="results-table">';
+                
+                // Headers
+                html += '<thead><tr>';
+                if (data.columns && data.columns.length > 0) {
+                    data.columns.forEach(col => {
+                        html += `<th>${escapeHtml(col.name || col)}</th>`;
+                    });
+                } else if (data.data[0]) {
+                    Object.keys(data.data[0]).forEach(key => {
+                        html += `<th>${escapeHtml(key)}</th>`;
+                    });
+                }
+                html += '</tr></thead>';
+
+                // Data rows
+                html += '<tbody>';
+                data.data.slice(0, 100).forEach(row => { // Limit to 100 rows for display
+                    html += '<tr>';
+                    Object.values(row).forEach(value => {
+                        html += `<td>${escapeHtml(String(value || ''))}</td>`;
+                    });
+                    html += '</tr>';
+                });
+                html += '</tbody>';
+                html += '</table>';
+
+                if (data.data.length > 100) {
+                    html += `<p style="margin-top: 10px; color: #666; font-style: italic;">Showing first 100 rows of ${data.data.length} total rows</p>`;
+                }
+            } else {
+                html += '<div class="success-message">Query executed successfully, but no data was returned.</div>';
+            }
+
+            // Show chart placeholder
+            if (data.data && data.data.length > 0) {
+                html += '<div class="chart-container">📈 Chart visualization would appear here</div>';
+            }
+
+            resultsContent.innerHTML = html;
+        }
+
+        function showError(message) {
+            const resultsContent = document.getElementById('resultsContent');
+            resultsContent.innerHTML = `<div class="error-message">❌ ${escapeHtml(message)}</div>`;
+        }
+
+        function showProgress(progress, message) {
+            const progressSection = document.getElementById('progressSection');
+            const progressFill = document.getElementById('progressFill');
+            const progressMessage = document.getElementById('progressMessage');
+
+            progressSection.style.display = 'block';
+            progressFill.style.width = `${Math.round(progress * 100)}%`;
+            progressMessage.textContent = message;
+        }
+
+        function hideProgress() {
+            document.getElementById('progressSection').style.display = 'none';
+        }
+
+        function resetSubmitButton() {
+            const submitButton = document.getElementById('submitQuery');
+            submitButton.disabled = false;
+            submitButton.textContent = '🚀 Execute Query';
+        }
+
+        function addToHistory(query, results) {
+            const historyItem = {
+                query,
+                timestamp: new Date().toISOString(),
+                success: results.success !== false,
+                rowCount: results.rowCount,
+                executionTime: results.executionTime
+            };
+
+            queryHistory.unshift(historyItem);
+            queryHistory = queryHistory.slice(0, 20); // Keep only last 20 queries
+            localStorage.setItem('queryHistory', JSON.stringify(queryHistory));
+            loadQueryHistory();
+        }
+
+        function loadQueryHistory() {
+            const historyContainer = document.getElementById('queryHistory');
+            
+            if (queryHistory.length === 0) {
+                historyContainer.innerHTML = '<p style="color: #a0aec0; text-align: center; margin-top: 20px;">No queries executed yet</p>';
+                return;
+            }
+
+            let html = '';
+            queryHistory.forEach((item, index) => {
+                const date = new Date(item.timestamp).toLocaleString();
+                const status = item.success ? '✅' : '❌';
+                
+                html += `
+                    <div class="history-item" onclick="setQuery('${escapeHtml(item.query)}')">
+                        <div class="history-query">${status} ${escapeHtml(item.query)}</div>
+                        <div class="history-meta">
+                            ${date} • ${item.rowCount || 0} rows • ${item.executionTime || 0}ms
+                        </div>
+                    </div>
+                `;
+            });
+
+            historyContainer.innerHTML = html;
+        }
+
+        function getAuthToken() {
+            // In a real application, this would get the JWT token from localStorage or cookies
+            return 'demo-token';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Clean up EventSource on page unload
+        window.addEventListener('beforeunload', function() {
+            if (currentEventSource) {
+                currentEventSource.close();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FieldSync AI - Visualization & Insights Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .widget {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            transition: transform 0.3s ease;
+        }
+
+        .widget:hover {
+            transform: translateY(-5px);
+        }
+
+        .widget h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart-recommendations {
+            grid-column: 1 / -1;
+        }
+
+        .recommendation-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .recommendation {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #3498db;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .confidence-bar {
+            width: 100%;
+            height: 8px;
+            background: #ecf0f1;
+            border-radius: 4px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #e74c3c, #f39c12, #27ae60);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .metric-card {
+            text-align: center;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+
+        .metric-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #27ae60;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        .insight-item {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 10px 0;
+            border-left: 4px solid #9b59b6;
+        }
+
+        .insight-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .insight-type {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .opportunity { background: #d5f4e6; color: #27ae60; }
+        .warning { background: #fef9e7; color: #f39c12; }
+        .trend { background: #ebf3fd; color: #3498db; }
+
+        .anomaly-chart {
+            display: flex;
+            align-items: end;
+            gap: 10px;
+            height: 150px;
+            padding: 20px 0;
+        }
+
+        .bar {
+            flex: 1;
+            background: #3498db;
+            border-radius: 4px 4px 0 0;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .bar.anomaly {
+            background: #e74c3c;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .bar-label {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.8em;
+            color: #7f8c8d;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .active { background: #27ae60; }
+        .inactive { background: #e74c3c; }
+
+        .schedule-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            margin: 8px 0;
+        }
+
+        .footer {
+            background: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .live-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #27ae60;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 FieldSync AI</h1>
+            <p>AI-Powered Visualization & Insights Layer</p>
+            <div style="margin-top: 15px;">
+                <span class="live-indicator"></span>
+                <span>Live Demo - Real-time Analytics</span>
+            </div>
+        </div>
+
+        <div class="dashboard">
+            <!-- Chart Recommendations -->
+            <div class="widget chart-recommendations">
+                <h3>📊 AI Chart Recommendations</h3>
+                <div class="recommendation-grid">
+                    <div class="recommendation">
+                        <h4>Line Chart</h4>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" style="width: 95%"></div>
+                        </div>
+                        <p><strong>95% Confidence</strong></p>
+                        <p>Perfect for time series trends</p>
+                    </div>
+                    <div class="recommendation">
+                        <h4>Bar Chart</h4>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" style="width: 88%"></div>
+                        </div>
+                        <p><strong>88% Confidence</strong></p>
+                        <p>Great for comparing values</p>
+                    </div>
+                    <div class="recommendation">
+                        <h4>Area Chart</h4>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" style="width: 82%"></div>
+                        </div>
+                        <p><strong>82% Confidence</strong></p>
+                        <p>Shows cumulative trends</p>
+                    </div>
+                    <div class="recommendation">
+                        <h4>Scatter Plot</h4>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" style="width: 75%"></div>
+                        </div>
+                        <p><strong>75% Confidence</strong></p>
+                        <p>Ideal for correlation analysis</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Key Metrics -->
+            <div class="widget">
+                <h3>📈 Key Performance Metrics</h3>
+                <div class="metric-card">
+                    <div class="metric-value">$134.5K</div>
+                    <div class="metric-label">Total Revenue (6 months)</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" style="color: #27ae60;">+23.5%</div>
+                    <div class="metric-label">Growth Rate</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" style="color: #3498db;">997</div>
+                    <div class="metric-label">Total Customers</div>
+                </div>
+            </div>
+
+            <!-- Anomaly Detection -->
+            <div class="widget">
+                <h3>🔍 Anomaly Detection</h3>
+                <div class="anomaly-chart">
+                    <div class="bar" style="height: 60%">
+                        <div class="bar-label">Jan</div>
+                    </div>
+                    <div class="bar" style="height: 72%">
+                        <div class="bar-label">Feb</div>
+                    </div>
+                    <div class="bar anomaly" style="height: 55%">
+                        <div class="bar-label">Mar</div>
+                    </div>
+                    <div class="bar" style="height: 88%">
+                        <div class="bar-label">Apr</div>
+                    </div>
+                    <div class="bar" style="height: 100%">
+                        <div class="bar-label">May</div>
+                    </div>
+                    <div class="bar" style="height: 112%">
+                        <div class="bar-label">Jun</div>
+                    </div>
+                </div>
+                <p style="color: #e74c3c; font-weight: bold;">⚠️ Anomaly detected in March: 8.3% below trend</p>
+            </div>
+
+            <!-- AI Insights -->
+            <div class="widget">
+                <h3>💡 AI-Generated Insights</h3>
+                <div class="insight-item">
+                    <div class="insight-header">
+                        <strong>Revenue Growth Acceleration</strong>
+                        <span class="insight-type opportunity">OPPORTUNITY</span>
+                    </div>
+                    <p>Potential to reach $35K monthly revenue by Q4 with current trajectory</p>
+                </div>
+                <div class="insight-item">
+                    <div class="insight-header">
+                        <strong>March Performance Dip</strong>
+                        <span class="insight-type warning">WARNING</span>
+                    </div>
+                    <p>Sales performance below trend - investigate potential causes</p>
+                </div>
+                <div class="insight-item">
+                    <div class="insight-header">
+                        <strong>Customer-Revenue Correlation</strong>
+                        <span class="insight-type trend">TREND</span>
+                    </div>
+                    <p>Strong positive correlation between acquisition and revenue</p>
+                </div>
+            </div>
+
+            <!-- Auto Refresh & Scheduling -->
+            <div class="widget">
+                <h3>⏰ Auto Refresh & Scheduling</h3>
+                <div class="schedule-item">
+                    <div>
+                        <span class="status-indicator active"></span>
+                        <strong>Dashboard Refresh</strong>
+                    </div>
+                    <span>Every 5 minutes</span>
+                </div>
+                <div class="schedule-item">
+                    <div>
+                        <span class="status-indicator active"></span>
+                        <strong>Insight Generation</strong>
+                    </div>
+                    <span>Every 30 minutes</span>
+                </div>
+                <div class="schedule-item">
+                    <div>
+                        <span class="status-indicator active"></span>
+                        <strong>Anomaly Detection</strong>
+                    </div>
+                    <span>Daily at 2 AM</span>
+                </div>
+                <div class="schedule-item">
+                    <div>
+                        <span class="status-indicator active"></span>
+                        <strong>Data Cleanup</strong>
+                    </div>
+                    <span>Daily at 3 AM</span>
+                </div>
+            </div>
+
+            <!-- Dashboard Builder -->
+            <div class="widget">
+                <h3>🏗️ Dashboard Builder</h3>
+                <div style="background: white; padding: 20px; border-radius: 10px; border: 2px dashed #bdc3c7;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                        <div style="background: #ecf0f1; padding: 15px; border-radius: 8px; text-align: center;">
+                            <strong>📊 Sales Chart</strong>
+                            <br><small>6x4 grid</small>
+                        </div>
+                        <div style="background: #ecf0f1; padding: 15px; border-radius: 8px; text-align: center;">
+                            <strong>📈 Revenue</strong>
+                            <br><small>3x2 grid</small>
+                        </div>
+                    </div>
+                    <div style="background: #ecf0f1; padding: 15px; border-radius: 8px; text-align: center;">
+                        <strong>📋 Performance Table</strong>
+                        <br><small>12x3 grid</small>
+                    </div>
+                </div>
+                <p style="margin-top: 15px; color: #7f8c8d;">
+                    <strong>5 widgets</strong> • Drag & drop layout • Responsive design
+                </p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>🚀 AI-Powered Visualization Layer - Production Ready</p>
+            <p style="margin-top: 10px; opacity: 0.8;">
+                Chart Recommendations • Dashboard Builder • Auto Refresh • Anomaly Detection • AI Insights • Background Scheduler
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Add some interactive animations
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate confidence bars
+            setTimeout(() => {
+                document.querySelectorAll('.confidence-fill').forEach(bar => {
+                    const width = bar.style.width;
+                    bar.style.width = '0%';
+                    setTimeout(() => {
+                        bar.style.width = width;
+                    }, 100);
+                });
+            }, 500);
+
+            // Animate metric values
+            document.querySelectorAll('.metric-value').forEach(metric => {
+                const finalValue = metric.textContent;
+                metric.textContent = '0';
+                
+                setTimeout(() => {
+                    metric.textContent = finalValue;
+                }, 1000);
+            });
+
+            // Add hover effects to widgets
+            document.querySelectorAll('.widget').forEach(widget => {
+                widget.addEventListener('mouseenter', function() {
+                    this.style.boxShadow = '0 10px 25px rgba(0,0,0,0.15)';
+                });
+                
+                widget.addEventListener('mouseleave', function() {
+                    this.style.boxShadow = '0 5px 15px rgba(0,0,0,0.08)';
+                });
+            });
+        });
+    </script>
+</body>
+</html>
