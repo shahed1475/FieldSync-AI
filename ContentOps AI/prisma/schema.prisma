@@ -1,0 +1,136 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+enum Platform {
+  FACEBOOK
+  INSTAGRAM
+  TWITTER
+  LINKEDIN
+  YOUTUBE
+  TIKTOK
+  PINTEREST
+}
+
+enum PostStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  FAILED
+}
+
+model Account {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  password     String
+  role         UserRole @default(USER)
+  subscription String   @default("free")
+  credits      Int      @default(100)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  channels     Channel[]
+  contentItems ContentItem[]
+
+  @@map("accounts")
+}
+
+model Channel {
+  id          String   @id @default(cuid())
+  accountId   String
+  platform    Platform
+  name        String
+  credentials String // Encrypted JSON containing platform-specific auth data
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  posts   Post[]
+
+  @@map("channels")
+}
+
+model ContentItem {
+  id           String   @id @default(cuid())
+  accountId    String
+  originalText String
+  mediaUrl     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  account    Account     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  variations Variation[]
+
+  @@map("content_items")
+}
+
+model Variation {
+  id          String   @id @default(cuid())
+  contentId   String
+  platform    Platform
+  adaptedText String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  content ContentItem @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  posts   Post[]
+
+  @@map("variations")
+}
+
+model Post {
+  id            String     @id @default(cuid())
+  variationId   String
+  channelId     String
+  scheduledTime DateTime?
+  publishedAt   DateTime?
+  status        PostStatus @default(DRAFT)
+  platformPostId String?   // ID from the social platform after posting
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  // Relations
+  variation Variation   @relation(fields: [variationId], references: [id], onDelete: Cascade)
+  channel   Channel     @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  analytics Analytics[]
+
+  @@map("posts")
+}
+
+model Analytics {
+  id          String   @id @default(cuid())
+  postId      String
+  impressions Int      @default(0)
+  engagement  Int      @default(0)
+  conversions Int      @default(0)
+  clicks      Int      @default(0)
+  shares      Int      @default(0)
+  comments    Int      @default(0)
+  likes       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("analytics")
+}
