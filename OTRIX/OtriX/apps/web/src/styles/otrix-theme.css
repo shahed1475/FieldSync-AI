@@ -1,0 +1,615 @@
+/* OtriX Admin Dashboard Theme */
+/* Inspired by https://otrix.ai branding and visual identity */
+
+:root {
+  /* Primary Colors - OtriX Signature Gradient */
+  --otrix-primary: #6E2BFF; /* Deep Purple */
+  --otrix-secondary: #00A6FF; /* Electric Blue */
+  --otrix-accent: #E93AFF; /* Neon Magenta */
+
+  /* Background Colors */
+  --otrix-bg: #0B0F19; /* Dark Navy Background */
+  --otrix-bg-secondary: #141822; /* Slightly lighter navy */
+  --otrix-surface: rgba(255, 255, 255, 0.05); /* Glass surface */
+  --otrix-surface-hover: rgba(255, 255, 255, 0.08);
+
+  /* Text Colors */
+  --otrix-text-primary: #FFFFFF; /* Bright White */
+  --otrix-text-secondary: #A0A0A0; /* Soft Gray */
+  --otrix-text-muted: #6B7280; /* Muted Gray */
+
+  /* Gradient Definitions */
+  --otrix-gradient-primary: linear-gradient(135deg, #6E2BFF 0%, #00A6FF 100%);
+  --otrix-gradient-secondary: linear-gradient(135deg, #E93AFF 0%, #6E2BFF 100%);
+  --otrix-gradient-accent: linear-gradient(135deg, #00A6FF 0%, #E93AFF 100%);
+  --otrix-gradient-glow: radial-gradient(circle at 50% 0%, rgba(110, 43, 255, 0.3) 0%, transparent 50%);
+
+  /* Glow Effects */
+  --otrix-glow-primary: 0 0 20px rgba(110, 43, 255, 0.4), 0 0 40px rgba(110, 43, 255, 0.2);
+  --otrix-glow-secondary: 0 0 20px rgba(0, 166, 255, 0.4), 0 0 40px rgba(0, 166, 255, 0.2);
+  --otrix-glow-accent: 0 0 20px rgba(233, 58, 255, 0.4), 0 0 40px rgba(233, 58, 255, 0.2);
+
+  /* Border Colors */
+  --otrix-border: rgba(255, 255, 255, 0.1);
+  --otrix-border-glow: rgba(110, 43, 255, 0.3);
+
+  /* Chart Colors */
+  --otrix-chart-primary: #6E2BFF;
+  --otrix-chart-secondary: #00A6FF;
+  --otrix-chart-accent: #E93AFF;
+  --otrix-chart-success: #10B981;
+  --otrix-chart-warning: #F59E0B;
+  --otrix-chart-error: #EF4444;
+
+  /* Status Colors */
+  --otrix-status-success: #10B981;
+  --otrix-status-warning: #F59E0B;
+  --otrix-status-error: #EF4444;
+  --otrix-status-info: #00A6FF;
+  --otrix-status-pending: #F59E0B;
+}
+
+/* Glassmorphism Effect */
+.otrix-glass {
+  background: var(--otrix-surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--otrix-border);
+}
+
+.otrix-glass-strong {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--otrix-border-glow);
+}
+
+/* Gradient Backgrounds */
+.otrix-bg-gradient {
+  background: var(--otrix-gradient-primary);
+}
+
+.otrix-bg-gradient-secondary {
+  background: var(--otrix-gradient-secondary);
+}
+
+.otrix-bg-gradient-accent {
+  background: var(--otrix-gradient-accent);
+}
+
+/* Text Gradients */
+.otrix-text-gradient {
+  background: var(--otrix-gradient-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.otrix-text-gradient-accent {
+  background: var(--otrix-gradient-accent);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Glow Effects */
+.otrix-glow {
+  box-shadow: var(--otrix-glow-primary);
+}
+
+.otrix-glow-secondary {
+  box-shadow: var(--otrix-glow-secondary);
+}
+
+.otrix-glow-accent {
+  box-shadow: var(--otrix-glow-accent);
+}
+
+/* Hover Glow Animation */
+.otrix-hover-glow {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.otrix-hover-glow:hover {
+  box-shadow: var(--otrix-glow-primary);
+  transform: translateY(-2px);
+}
+
+/* Border Glow */
+.otrix-border-glow {
+  border: 1px solid var(--otrix-border-glow);
+  box-shadow: 0 0 15px rgba(110, 43, 255, 0.2);
+}
+
+.otrix-border-glow-accent {
+  border: 1px solid rgba(233, 58, 255, 0.5);
+  box-shadow: 0 0 15px rgba(233, 58, 255, 0.2);
+}
+
+/* Card Styles */
+.otrix-card {
+  background: var(--otrix-surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--otrix-border);
+  border-radius: 1rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.otrix-card:hover {
+  background: var(--otrix-surface-hover);
+  border-color: var(--otrix-border-glow);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 32px rgba(110, 43, 255, 0.15);
+}
+
+/* Sidebar Styles */
+.otrix-sidebar {
+  background: linear-gradient(180deg, var(--otrix-bg) 0%, var(--otrix-bg-secondary) 100%);
+  border-right: 1px solid var(--otrix-border-glow);
+  box-shadow: 4px 0 24px rgba(110, 43, 255, 0.1);
+}
+
+.otrix-sidebar-link {
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.otrix-sidebar-link::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 0;
+  background: var(--otrix-gradient-primary);
+  transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 0 4px 4px 0;
+}
+
+.otrix-sidebar-link-active::before {
+  height: 70%;
+}
+
+.otrix-sidebar-link-active {
+  background: var(--otrix-surface);
+  border: 1px solid var(--otrix-border-glow);
+  box-shadow: var(--otrix-glow-primary);
+}
+
+/* Table Styles */
+.otrix-table {
+  background: var(--otrix-surface);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--otrix-border);
+}
+
+.otrix-table-header {
+  background: linear-gradient(90deg, rgba(110, 43, 255, 0.1) 0%, rgba(0, 166, 255, 0.1) 100%);
+  border-bottom: 2px solid var(--otrix-border-glow);
+}
+
+.otrix-table-row {
+  transition: all 0.2s ease;
+  border-bottom: 1px solid var(--otrix-border);
+}
+
+.otrix-table-row:hover {
+  background: var(--otrix-surface-hover);
+  box-shadow: 0 0 20px rgba(110, 43, 255, 0.1);
+}
+
+/* Button Styles */
+.otrix-btn-primary {
+  background: var(--otrix-gradient-primary);
+  color: var(--otrix-text-primary);
+  border: none;
+  box-shadow: 0 4px 16px rgba(110, 43, 255, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.otrix-btn-primary:hover {
+  box-shadow: var(--otrix-glow-primary);
+  transform: translateY(-2px);
+}
+
+.otrix-btn-secondary {
+  background: var(--otrix-gradient-accent);
+  color: var(--otrix-text-primary);
+  border: none;
+  box-shadow: 0 4px 16px rgba(233, 58, 255, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.otrix-btn-secondary:hover {
+  box-shadow: var(--otrix-glow-accent);
+  transform: translateY(-2px);
+}
+
+/* Progress Bar */
+.otrix-progress-bar {
+  background: var(--otrix-gradient-primary);
+  box-shadow: 0 0 10px rgba(110, 43, 255, 0.5);
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Badge Styles */
+.otrix-badge {
+  background: var(--otrix-surface);
+  border: 1px solid var(--otrix-border);
+  backdrop-filter: blur(8px);
+}
+
+.otrix-badge-success {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #10B981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+}
+
+.otrix-badge-warning {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #F59E0B;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+}
+
+.otrix-badge-error {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #EF4444;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+}
+
+.otrix-badge-info {
+  background: linear-gradient(135deg, rgba(0, 166, 255, 0.2) 0%, rgba(0, 166, 255, 0.1) 100%);
+  border-color: rgba(0, 166, 255, 0.3);
+  color: #00A6FF;
+  box-shadow: 0 0 10px rgba(0, 166, 255, 0.2);
+}
+
+.otrix-badge-primary {
+  background: linear-gradient(135deg, rgba(110, 43, 255, 0.2) 0%, rgba(110, 43, 255, 0.1) 100%);
+  border-color: rgba(110, 43, 255, 0.3);
+  color: #6E2BFF;
+  box-shadow: 0 0 10px rgba(110, 43, 255, 0.2);
+}
+
+/* Animation Classes */
+@keyframes otrix-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.otrix-pulse {
+  animation: otrix-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes otrix-shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.otrix-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 1000px 100%;
+  animation: otrix-shimmer 2s infinite;
+}
+
+/* Smooth Transitions */
+.otrix-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Responsive Glow Effects */
+@media (prefers-reduced-motion: no-preference) {
+  .otrix-animate-glow {
+    animation: otrix-pulse 3s ease-in-out infinite;
+  }
+}
+
+/* Dark Mode Overrides */
+.dark {
+  color-scheme: dark;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--otrix-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--otrix-surface);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--otrix-surface-hover);
+}
+
+/* Gradient Shift Animation */
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.otrix-gradient {
+  background: linear-gradient(120deg, #6E2BFF, #00A6FF, #E93AFF);
+  background-size: 200% 200%;
+  animation: gradientShift 8s ease infinite;
+}
+
+.otrix-gradient-border {
+  position: relative;
+  background: var(--otrix-surface);
+  backdrop-filter: blur(16px);
+}
+
+.otrix-gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  padding: 2px;
+  background: linear-gradient(120deg, #6E2BFF, #00A6FF, #E93AFF);
+  background-size: 200% 200%;
+  animation: gradientShift 8s ease infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.5;
+}
+
+/* Neon Blur Overlay */
+.otrix-neon-blur {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  background: linear-gradient(135deg, #6E2BFF 0%, #00A6FF 100%);
+  border-radius: 50%;
+  filter: blur(180px);
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+/* Page Container */
+.otrix-page-container {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1.5rem;
+  padding: 2rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.otrix-page-container:hover {
+  border-color: rgba(110, 43, 255, 0.5);
+  box-shadow: 0 0 10px rgba(110, 43, 255, 0.25);
+}
+
+/* Page Header */
+.otrix-page-header {
+  margin-bottom: 2rem;
+}
+
+.otrix-page-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin-bottom: 0.5rem;
+  line-height: 1.2;
+}
+
+.otrix-page-description {
+  color: #9CA3AF;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+/* Section Styles */
+.otrix-section {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.otrix-section:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(110, 43, 255, 0.3);
+}
+
+.otrix-section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #FFFFFF;
+  margin-bottom: 1rem;
+}
+
+/* Info Card */
+.otrix-info-card {
+  background: linear-gradient(135deg, rgba(110, 43, 255, 0.1) 0%, rgba(0, 166, 255, 0.05) 100%);
+  border: 1px solid rgba(110, 43, 255, 0.2);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Text Colors */
+.otrix-text {
+  color: #E0E0E0;
+}
+
+.otrix-text-muted {
+  color: #9CA3AF;
+}
+
+.otrix-text-white {
+  color: #FFFFFF;
+}
+
+/* Enhanced Text Visibility - Gradient Titles with Glow */
+.otrix-title-gradient {
+  font-size: 1.875rem;
+  font-weight: 700;
+  background: linear-gradient(to right, #6E2BFF, #00A6FF);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 8px rgba(110, 43, 255, 0.6));
+  line-height: 1.2;
+}
+
+.otrix-subtitle {
+  color: #B3B3B3;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+  margin-top: 0.25rem;
+  font-size: 0.95rem;
+}
+
+/* Enhanced Card Hover Effects */
+.otrix-card-enhanced {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  padding: 2rem;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.otrix-card-enhanced:hover {
+  border-color: rgba(110, 43, 255, 0.5);
+  box-shadow: 0 0 20px rgba(110, 43, 255, 0.25);
+  transform: scale(1.02);
+}
+
+/* Interactive Button Glow */
+.otrix-btn-glow {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.625rem 1.25rem;
+  font-weight: 500;
+  color: white;
+  border-radius: 0.5rem;
+  background: linear-gradient(to right, #6E2BFF, #00A6FF);
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(110, 43, 255, 0.3);
+}
+
+.otrix-btn-glow:hover {
+  box-shadow: 0 0 15px rgba(110, 43, 255, 0.5);
+  transform: translateY(-2px);
+}
+
+/* Sidebar Active Link Enhanced Glow */
+.otrix-sidebar-link-glow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.otrix-sidebar-link-glow:hover {
+  background: rgba(110, 43, 255, 0.2);
+  box-shadow: 0 0 12px rgba(110, 43, 255, 0.4);
+}
+
+/* Table Row Gradient Highlight */
+.otrix-table-row-enhanced {
+  transition: all 0.2s ease;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.otrix-table-row-enhanced:hover {
+  background: rgba(110, 43, 255, 0.1);
+  box-shadow: 0 0 10px rgba(110, 43, 255, 0.2);
+  border-left: 2px solid #6E2BFF;
+}
+
+/* Empty State Animation */
+.otrix-empty-state {
+  color: #9CA3AF;
+  text-align: center;
+  padding: 3rem 0;
+  animation: otrix-pulse 2s ease-in-out infinite;
+}
+
+.otrix-empty-state span {
+  opacity: 0.8;
+  display: inline-block;
+}
+
+/* Staggered Fade-In Animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.otrix-fade-in-up {
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+/* Scale on Hover */
+.otrix-scale-hover {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.otrix-scale-hover:hover {
+  transform: scale(1.05);
+}
+
+/* Icon Pulse Effect */
+@keyframes iconPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.otrix-icon-pulse:hover {
+  animation: iconPulse 0.6s ease-in-out;
+}
