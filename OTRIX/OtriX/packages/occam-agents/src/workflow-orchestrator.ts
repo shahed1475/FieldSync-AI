@@ -83,7 +83,7 @@ export class WorkflowOrchestrator {
 
     const startTime = Date.now();
     const stepResults: StepResult[] = [];
-    let context: WorkflowExecutionContext = {
+    const context: WorkflowExecutionContext = {
       workflowId,
       stepId: '',
       data: initialData,
