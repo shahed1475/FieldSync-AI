@@ -19,6 +19,7 @@ export interface SOP {
   owner: string;
   name?: string;
   version?: string;
+  sections?: Section[];
   createdAt?: Date;
   updatedAt?: Date;
 }
