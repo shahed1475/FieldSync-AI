@@ -53,6 +53,9 @@ export class VaultService {
         provider,
         credentialType,
         encryptedValue: JSON.stringify(encryptedValue),
+        issuer: provider,
+        scope: 'payment',
+        lastRotated: new Date(),
         metadata,
         createdAt: new Date(),
       };

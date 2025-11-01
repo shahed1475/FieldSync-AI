@@ -1,47 +1,56 @@
 /**
- * Core OCCAM Types
+ * Core OCCAM Types - Foundation Layer
+ * Phase 0: Foundation Setup
  */
 
 export interface Policy {
   id: string;
-  name: string;
+  title: string;
+  sections: Section[];
   version: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface SOP {
   id: string;
   policyId: string;
-  name: string;
-  version: string;
-  sections: Section[];
-  createdAt: Date;
-  updatedAt: Date;
+  steps: Step[];
+  owner: string;
+  name?: string;
+  version?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface Section {
   id: string;
-  sopId: string;
   name: string;
+  clauses: Clause[];
   order: number;
-  steps: Step[];
+  sopId?: string;
+  steps?: Step[];
 }
 
 export interface Step {
   id: string;
-  sectionId: string;
-  name: string;
-  order: number;
-  clauses: Clause[];
+  description: string;
+  completed: boolean;
+  responsible: string;
+  sectionId?: string;
+  order?: number;
+  clauses?: Clause[];
 }
 
 export interface Clause {
   id: string;
-  stepId: string;
-  content: string;
-  type: 'requirement' | 'recommendation' | 'prohibition';
-  regulatory: RegulatoryCitation[];
+  text: string;
+  riskLevel: 'low' | 'medium' | 'high';
+  jurisdiction: string;
+  stepId?: string;
+  content?: string;
+  type?: 'requirement' | 'recommendation' | 'prohibition';
+  regulatory?: RegulatoryCitation[];
 }
 
 export interface RegulatoryCitation {
@@ -52,10 +61,11 @@ export interface RegulatoryCitation {
 
 export interface AuditTrail {
   id: string;
-  entityType: string;
-  entityId: string;
   action: string;
-  userId: string;
   timestamp: Date;
-  metadata: Record<string, unknown>;
+  actor: string;
+  metadata?: Record<string, any>;
+  entityType?: string;
+  entityId?: string;
+  userId?: string;
 }

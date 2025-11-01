@@ -13,10 +13,14 @@ export interface SecureCredential {
   provider: string;
   credentialType: CredentialType;
   encryptedValue: string;
+  issuer: string;
+  scope: string;
+  lastRotated: Date;
   metadata?: Record<string, any>;
   createdAt: Date;
   expiresAt?: Date;
   rotatedAt?: Date;
+  type?: CredentialType;
 }
 
 /**

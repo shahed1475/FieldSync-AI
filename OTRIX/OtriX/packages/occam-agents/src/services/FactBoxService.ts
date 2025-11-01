@@ -102,6 +102,61 @@ export class FactBoxService {
   }
 
   /**
+   * Get expiring registrations within a specified number of days
+   */
+  async getExpiringRegistrations(daysAhead: number = 30): Promise<Array<{ entityId: string; registration: any }>> {
+    const expiringRegistrations: Array<{ entityId: string; registration: any }> = [];
+    const now = new Date();
+    const threshold = new Date();
+    threshold.setDate(threshold.getDate() + daysAhead);
+
+    // Iterate through all cached entities
+    for (const [entityId, entity] of this.entityCache.entries()) {
+      if (entity.registrations) {
+        for (const registration of entity.registrations) {
+          if (registration.expirationDate) {
+            const expirationDate = new Date(registration.expirationDate);
+            if (expirationDate >= now && expirationDate <= threshold) {
+              expiringRegistrations.push({
+                entityId,
+                registration,
+              });
+            }
+          }
+        }
+      }
+    }
+
+    return expiringRegistrations;
+  }
+
+  /**
+   * Get expired registrations
+   */
+  async getExpiredRegistrations(): Promise<Array<{ entityId: string; registration: any }>> {
+    const expiredRegistrations: Array<{ entityId: string; registration: any }> = [];
+    const now = new Date();
+
+    for (const [entityId, entity] of this.entityCache.entries()) {
+      if (entity.registrations) {
+        for (const registration of entity.registrations) {
+          if (registration.expirationDate) {
+            const expirationDate = new Date(registration.expirationDate);
+            if (expirationDate < now && registration.status === 'active') {
+              expiredRegistrations.push({
+                entityId,
+                registration,
+              });
+            }
+          }
+        }
+      }
+    }
+
+    return expiredRegistrations;
+  }
+
+  /**
    * Clears all cached data
    */
   clearCache(): void {

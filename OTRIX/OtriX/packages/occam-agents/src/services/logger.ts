@@ -66,3 +66,40 @@ export function logWithTrace(
 ): void {
   logger.log(level, message, { trace_id: traceId, ...meta });
 }
+
+/**
+ * Logger class wrapper for OCCAM services
+ */
+export class Logger {
+  private logger: winston.Logger;
+  private traceId: string;
+
+  constructor(config?: Partial<OCCAMConfig['logging']>) {
+    this.logger = createLogger(config);
+    this.traceId = this.generateTraceId();
+  }
+
+  info(message: string, meta?: Record<string, any>): void {
+    this.logger.info(message, { trace_id: this.traceId, ...meta });
+  }
+
+  error(message: string, error?: Error, meta?: Record<string, any>): void {
+    this.logger.error(message, { trace_id: this.traceId, error: error?.message, stack: error?.stack, ...meta });
+  }
+
+  warn(message: string, meta?: Record<string, any>): void {
+    this.logger.warn(message, { trace_id: this.traceId, ...meta });
+  }
+
+  debug(message: string, meta?: Record<string, any>): void {
+    this.logger.debug(message, { trace_id: this.traceId, ...meta });
+  }
+
+  getTraceId(): string {
+    return this.traceId;
+  }
+
+  private generateTraceId(): string {
+    return `trace_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+}

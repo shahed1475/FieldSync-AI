@@ -368,6 +368,74 @@ export class AuditService {
       throw error;
     }
   }
+
+  /**
+   * Start an audit trail for a complex operation
+   */
+  async startTrail(
+    operationId: string,
+    operationType: string,
+    userId: string,
+    metadata?: Record<string, any>
+  ): Promise<string> {
+    return this.logEvent({
+      eventType: 'system_action',
+      entityId: operationId,
+      userId,
+      severity: 'info',
+      action: `start_${operationType}`,
+      description: `Started ${operationType} operation`,
+      metadata: { operationId, operationType, ...metadata },
+      result: 'pending',
+    });
+  }
+
+  /**
+   * Add a step to an ongoing audit trail
+   */
+  async addToTrail(
+    operationId: string,
+    stepName: string,
+    stepResult: 'success' | 'failure' | 'pending',
+    metadata?: Record<string, any>
+  ): Promise<string> {
+    return this.logEvent({
+      eventType: 'system_action',
+      entityId: operationId,
+      severity: (stepResult === 'failure' ? 'high' : 'info') as SeverityLevel,
+      action: `trail_step_${stepName}`,
+      description: `Audit trail step: ${stepName}`,
+      metadata: { operationId, stepName, ...metadata },
+      result: stepResult,
+    });
+  }
+
+  /**
+   * Complete an audit trail
+   */
+  async completeTrail(
+    operationId: string,
+    operationType: string,
+    finalResult: 'success' | 'failure',
+    metadata?: Record<string, any>
+  ): Promise<string> {
+    return this.logEvent({
+      eventType: 'system_action',
+      entityId: operationId,
+      severity: (finalResult === 'failure' ? 'high' : 'info') as SeverityLevel,
+      action: `complete_${operationType}`,
+      description: `Completed ${operationType} operation with result: ${finalResult}`,
+      metadata: { operationId, operationType, finalResult, ...metadata },
+      result: finalResult,
+    });
+  }
+
+  /**
+   * Generate a unique trace ID
+   */
+  generateTraceId(): string {
+    return uuidv4();
+  }
 }
 
 export default AuditService;

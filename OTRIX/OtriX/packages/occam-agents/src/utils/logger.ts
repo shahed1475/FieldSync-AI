@@ -3,3 +3,4 @@
  */
 
 export * from '../services/logger';
+export { Logger } from '../services/logger';

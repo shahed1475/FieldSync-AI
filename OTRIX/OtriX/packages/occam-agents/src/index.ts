@@ -1,5 +1,6 @@
 /**
  * OCCAM Agents - Intelligent Compliance Agents
+ * Phase 0: Foundation Setup
  */
 
 // Export agent registry
@@ -14,10 +15,19 @@ export { OCCAMAccountAgent } from './agents/occam-account-agent';
 export { OCCAMStatusAgent } from './agents/occam-status-agent';
 
 // Export workflow orchestrator
-export * from './workflow-orchestrator';
+export {
+  WorkflowOrchestrator,
+  workflowOrchestrator,
+  type WorkflowStep,
+  type WorkflowDefinition,
+  type WorkflowExecutionContext,
+  type WorkflowExecutionResult,
+  type StepResult
+} from './workflow-orchestrator';
 
 // Export services
-export * from './services';
+export { AuditService } from './services/audit.service';
+export { FactBoxService } from './services/FactBoxService';
 
 // Export types
 export * from './types';

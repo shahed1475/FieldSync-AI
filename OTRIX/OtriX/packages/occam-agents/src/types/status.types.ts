@@ -7,7 +7,7 @@ import { WorkflowStage, WorkflowStatus, PendingAction } from './workflow.types';
 
 export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';
 
-export type SeverityLevel = 'info' | 'warning' | 'critical';
+export type SeverityLevel = 'info' | 'warning' | 'high' | 'critical' | 'error';
 
 export interface StatusSummary {
   entity_id: string;
