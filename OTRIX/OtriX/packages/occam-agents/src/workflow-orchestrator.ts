@@ -59,15 +59,19 @@ const DEFAULT_WORKFLOW_CONFIG: WorkflowConfig = {
 };
 
 /**
- * Shared context for agent execution
+ * Shared context for agent execution (immutable runContext)
+ * Structure: {ontologySnapshot, factboxSnapshot, policyMatrixVersion, vaultRefs}
  */
 export interface SharedContext {
   ontologySnapshot: any;
-  factBoxEntries: any[];
+  factboxSnapshot: any[];
+  policyMatrixVersion: string;
+  vaultRefs: any[];
   regulatoryContext: any;
   agentResults: Map<string, AgentExecutionResult>;
   checksum: string;
   startTime: number;
+  frozen: boolean; // Immutability flag
 }
 
 /**
@@ -247,20 +251,30 @@ export class WorkflowOrchestrator {
   }
 
   /**
-   * Initialize shared context
+   * Initialize shared context (buildRunContext → freeze())
    */
   private initializeContext(initial?: Partial<SharedContext>): SharedContext {
     const context: SharedContext = {
       ontologySnapshot: initial?.ontologySnapshot || {},
-      factBoxEntries: initial?.factBoxEntries || [],
+      factboxSnapshot: initial?.factboxSnapshot || [],
+      policyMatrixVersion: initial?.policyMatrixVersion || '1.0.0',
+      vaultRefs: initial?.vaultRefs || [],
       regulatoryContext: initial?.regulatoryContext || {},
       agentResults: new Map(),
       checksum: '',
-      startTime: Date.now()
+      startTime: Date.now(),
+      frozen: false
     };
 
     // Calculate initial checksum
     context.checksum = this.calculateChecksum(context);
+
+    // Freeze the context to make it immutable
+    context.frozen = true;
+    Object.freeze(context.ontologySnapshot);
+    Object.freeze(context.factboxSnapshot);
+    Object.freeze(context.vaultRefs);
+    Object.freeze(context.regulatoryContext);
 
     return context;
   }
@@ -271,7 +285,9 @@ export class WorkflowOrchestrator {
   private calculateChecksum(context: SharedContext): string {
     const data = JSON.stringify({
       ontology: context.ontologySnapshot,
-      factBox: context.factBoxEntries,
+      factbox: context.factboxSnapshot,
+      policyMatrix: context.policyMatrixVersion,
+      vault: context.vaultRefs,
       regulatory: context.regulatoryContext
     });
 
@@ -358,8 +374,16 @@ export class WorkflowOrchestrator {
 
       // Add context chaining if enabled
       if (this.config.enableContextChaining && this.sharedContext) {
+        // Validate checksum hasn't changed mid-run - if different, abort + rehydrate
+        if (this.config.enableChecksumValidation) {
+          const currentChecksum = this.calculateChecksum(this.sharedContext);
+          if (currentChecksum !== this.sharedContext.checksum) {
+            throw new Error(`Checksum mismatch detected mid-run. Expected: ${this.sharedContext.checksum}, Got: ${currentChecksum}. Aborting to rehydrate context.`);
+          }
+        }
+
         executionContext.ontologySnapshot = this.sharedContext.ontologySnapshot;
-        executionContext.factBoxEntries = this.sharedContext.factBoxEntries;
+        executionContext.factBoxEntries = this.sharedContext.factboxSnapshot;
         executionContext.regulatoryContext = this.sharedContext.regulatoryContext;
 
         // Add results from dependency agents

@@ -10,6 +10,26 @@
  */
 
 /**
+ * Authority Reference
+ * Each Clause/SOP/Policy must carry this metadata
+ */
+export interface AuthorityRef {
+  authority_id: string;
+  authority_ts: string;
+  source_hash: string;
+}
+
+/**
+ * Drift Check Result
+ */
+export interface DriftCheck {
+  cosine: number;
+  blocked: boolean;
+  reason?: string;
+  authority?: AuthorityRef;
+}
+
+/**
  * Audit event types
  */
 export type AuditEventType =
@@ -251,24 +271,4 @@ export interface IAuditService {
   verifyAuditChain(startHash?: string, endHash?: string): Promise<boolean>;
 }
 
-/**
- * Export all types
- */
-export type {
-  AuditEventType,
-  AuditSeverity,
-  VerificationStatus,
-  AuditTrailRecord,
-  ComplianceIntegrityReport,
-  ValidationResult,
-  ValidationIssue,
-  DriftAnalysis,
-  DriftCase,
-  RiskLevelSummary,
-  SLOComplianceStatus,
-  SLOMetric,
-  ReVerificationJob,
-  WeeklyAuditConfig,
-  AuditTrailQuery,
-  IAuditService
-};
+// All types are exported via their interface/type declarations above

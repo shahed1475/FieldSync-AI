@@ -28,11 +28,15 @@ export type {
 // Export audit job
 export { WeeklyAuditJob, weeklyAuditJob } from './audit-job';
 
+import { WorkflowOrchestrator as WOClass, workflowOrchestrator as woInstance } from './workflow-orchestrator';
+import { AgentRegistry as ARClass, agentRegistry as arInstance } from './agent-registry';
+import { WeeklyAuditJob as WAJClass, weeklyAuditJob as wajInstance } from './audit-job';
+
 export default {
-  WorkflowOrchestrator,
-  workflowOrchestrator,
-  AgentRegistry,
-  agentRegistry,
-  WeeklyAuditJob,
-  weeklyAuditJob
+  WorkflowOrchestrator: WOClass,
+  workflowOrchestrator: woInstance,
+  AgentRegistry: ARClass,
+  agentRegistry: arInstance,
+  WeeklyAuditJob: WAJClass,
+  weeklyAuditJob: wajInstance
 };

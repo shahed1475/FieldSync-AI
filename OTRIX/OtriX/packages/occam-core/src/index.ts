@@ -6,11 +6,13 @@
  */
 
 // Export telemetry
-export { TelemetryService, telemetryService } from './telemetry/telemetry';
+export { TelemetryService, telemetryService, logDecision, exposeMetrics } from './telemetry/telemetry';
 export type { TelemetryEvent, SLOTargets } from './telemetry/telemetry';
 
 // Export audit types
 export type {
+  AuthorityRef,
+  DriftCheck,
   AuditEventType,
   AuditSeverity,
   VerificationStatus,
@@ -29,7 +31,9 @@ export type {
   IAuditService
 } from './types/audit.types';
 
+import { TelemetryService as TelemetryServiceClass, telemetryService as telemetryServiceInstance } from './telemetry/telemetry';
+
 export default {
-  TelemetryService,
-  telemetryService
+  TelemetryService: TelemetryServiceClass,
+  telemetryService: telemetryServiceInstance
 };

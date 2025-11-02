@@ -64,14 +64,14 @@ export class TelemetryService {
   private sloTargets: SLOTargets;
 
   // Prometheus metrics
-  private eventCounter: Counter;
-  private latencyHistogram: Histogram;
-  private confidenceScoreGauge: Gauge;
-  private successRateGauge: Gauge;
-  private driftDetectionCounter: Counter;
-  private sloComplianceGauge: Gauge;
-  private cpuUtilizationGauge: Gauge;
-  private memoryUtilizationGauge: Gauge;
+  private eventCounter!: Counter;
+  private latencyHistogram!: Histogram;
+  private confidenceScoreGauge!: Gauge;
+  private successRateGauge!: Gauge;
+  private driftDetectionCounter!: Counter;
+  private sloComplianceGauge!: Gauge;
+  private cpuUtilizationGauge!: Gauge;
+  private memoryUtilizationGauge!: Gauge;
 
   // In-memory telemetry storage
   private events: TelemetryEvent[] = [];
@@ -407,5 +407,70 @@ export class TelemetryService {
  * Singleton instance
  */
 export const telemetryService = new TelemetryService();
+
+/**
+ * Log decision node
+ * Logs telemetry for critical decision nodes: data → validation → form → payment → submission → confirmation
+ */
+export function logDecision(node: string, payload: any): void {
+  const startTime = payload.startTime || Date.now();
+  const latency = Date.now() - startTime;
+
+  // Log to telemetry service
+  telemetryService.logEvent({
+    eventType: mapNodeToEventType(node),
+    severity: payload.success ? 'info' : 'error',
+    agentId: payload.agentId,
+    agentName: payload.agentName || node,
+    documentId: payload.documentId,
+    latency,
+    success: payload.success !== false,
+    confidenceScore: payload.confidence,
+    metadata: {
+      node,
+      checksum: payload.checksum,
+      drift_score: payload.drift_score,
+      ...payload.metadata
+    }
+  });
+
+  // Console log for development
+  console.log(`[OCCAM Decision] ${node}:`, {
+    latency: `${latency}ms`,
+    success: payload.success !== false,
+    confidence: payload.confidence,
+    drift_score: payload.drift_score
+  });
+}
+
+/**
+ * Map node name to event type
+ */
+function mapNodeToEventType(node: string): AuditEventType {
+  const mapping: Record<string, AuditEventType> = {
+    'data': 'data-ingestion',
+    'validation': 'validation-check',
+    'form': 'form-generation',
+    'payment': 'payment-processing',
+    'submission': 'submission-attempt',
+    'confirmation': 'confirmation-received'
+  };
+
+  return mapping[node.toLowerCase()] || 'compliance-check';
+}
+
+/**
+ * Expose Prometheus metrics endpoint
+ * Usage: app.get('/metrics/occam', async (req, res) => exposeMetrics(req, res))
+ */
+export async function exposeMetrics(req: any, res: any): Promise<void> {
+  try {
+    const metrics = await telemetryService.getMetrics();
+    res.set('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
+    res.send(metrics);
+  } catch (error) {
+    res.status(500).send('Error generating metrics');
+  }
+}
 
 export default TelemetryService;
