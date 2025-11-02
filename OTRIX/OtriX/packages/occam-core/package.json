@@ -1,0 +1,30 @@
+{
+  "name": "@otrix/occam-core",
+  "version": "1.0.0",
+  "description": "OCCAM Core - Telemetry, Audit, and Performance Monitoring",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "test": "echo \"Tests to be added\""
+  },
+  "keywords": [
+    "occam",
+    "telemetry",
+    "audit",
+    "compliance"
+  ],
+  "author": "OtriX Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "prom-client": "^15.1.0"
+  }
+}

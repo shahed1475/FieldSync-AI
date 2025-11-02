@@ -1,0 +1,31 @@
+{
+  "name": "@otrix/occam-agents",
+  "version": "1.0.0",
+  "description": "OCCAM Agents - Workflow Orchestration and Agent Management",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "test": "echo \"Tests to be added\""
+  },
+  "keywords": [
+    "occam",
+    "agents",
+    "workflow",
+    "orchestration",
+    "compliance"
+  ],
+  "author": "OtriX Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@otrix/occam-core": "^1.0.0"
+  }
+}
