@@ -21,7 +21,9 @@ class QuickBooksService {
         throw new Error('Data source not found or missing credentials');
       }
 
-      const credentials = JSON.parse(dataSource.credentials);
+      const credentials = typeof dataSource.credentials === 'string'
+        ? JSON.parse(dataSource.credentials)
+        : (dataSource.credentials || {});
       
       // Get valid access token (will refresh if needed)
       const validAccessToken = await this.oauthManager.getValidAccessToken(dataSourceId);
@@ -441,26 +443,26 @@ class QuickBooksService {
   async saveConnection(organizationId, connectionData) {
     try {
       const dataSource = await DataSource.create({
-        organization_id: organizationId,
+        org_id: organizationId,
         name: connectionData.name || 'QuickBooks Connection',
         type: 'quickbooks',
         connection_string: JSON.stringify({
           realmId: connectionData.realmId,
           baseURL: this.baseURL
         }),
-        credentials: JSON.stringify({
+        credentials: {
           accessToken: connectionData.accessToken,
           refreshToken: connectionData.refreshToken,
           realmId: connectionData.realmId,
           expiresAt: new Date(Date.now() + (connectionData.expiresIn * 1000))
-        }),
+        },
         status: 'active',
-        metadata: JSON.stringify({
+        metadata: {
           provider: 'quickbooks',
           companyName: connectionData.companyName,
           lastSync: new Date(),
           availableDataTypes: ['customers', 'items', 'invoices', 'payments', 'reports']
-        })
+        }
       });
 
       return dataSource;

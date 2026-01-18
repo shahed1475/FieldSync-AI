@@ -48,6 +48,7 @@ const corsOptions = {
     const allowedOrigins = [
       'http://localhost:3000',
       'http://localhost:8080',
+      'http://localhost:8081',
       'https://insightflow-ai.vercel.app',
       process.env.FRONTEND_URL
     ].filter(Boolean);
@@ -191,7 +192,7 @@ const sqlInjectionProtection = (req, res, next) => {
   };
 
   // Skip SQL injection check for certain endpoints that legitimately need SQL
-  const skipPaths = ['/api/queries'];
+  const skipPaths = ['/api/queries', '/api/ai'];
   const shouldSkip = skipPaths.some(path => req.path.startsWith(path));
 
   if (!shouldSkip) {

@@ -8,6 +8,20 @@ const authenticateToken = async (req, res, next) => {
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
     if (!token) {
+      if (process.env.NODE_ENV === 'development' && process.env.ALLOW_ANON === 'true') {
+        const demoOrgId = process.env.DEMO_ORG_ID || '00000000-0000-0000-0000-000000000000';
+        req.user = {
+          id: 'demo-user',
+          email: 'demo@localhost',
+          role: 'viewer',
+          orgId: demoOrgId,
+          organizationId: demoOrgId,
+          organization_id: demoOrgId,
+          organization: { id: demoOrgId, name: 'Demo Org', subscription_tier: 'free' }
+        };
+        return next();
+      }
+
       return res.status(401).json({
         success: false,
         message: 'Access token is required',
@@ -42,6 +56,8 @@ const authenticateToken = async (req, res, next) => {
       email: user.email,
       role: user.role,
       orgId: user.organization_id,
+      organizationId: user.organization_id,
+      organization_id: user.organization_id,
       organization: user.organization
     };
 
@@ -136,12 +152,10 @@ const refreshToken = async (req, res, next) => {
     const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
     
     // Generate new access token
-    const newToken = generateToken({
-      userId: decoded.userId,
-      orgId: decoded.orgId || decoded.organizationId,
-      email: decoded.email,
-      role: decoded.role
-    });
+    const newToken = generateToken(
+      decoded.userId || decoded.id,
+      decoded.orgId || decoded.organizationId
+    );
 
     res.json({
       success: true,

@@ -30,7 +30,9 @@ class ShopifyService {
         throw new Error('Data source not found or missing credentials');
       }
 
-      const credentials = JSON.parse(dataSource.credentials);
+      const credentials = typeof dataSource.credentials === 'string'
+        ? JSON.parse(dataSource.credentials)
+        : (dataSource.credentials || {});
       return credentials;
     } catch (error) {
       throw new Error(`Failed to get credentials: ${error.message}`);
@@ -428,28 +430,28 @@ class ShopifyService {
       const shop = await shopify.shop.get();
 
       const dataSource = await DataSource.create({
-        organization_id: organizationId,
+        org_id: organizationId,
         name: connectionData.name || `Shopify - ${shop.name}`,
         type: 'shopify',
         connection_string: JSON.stringify({
           shopName: connectionData.credentials.shopName,
           domain: shop.domain
         }),
-        credentials: JSON.stringify({
+        credentials: {
           accessToken: connectionData.credentials.accessToken,
           shopName: connectionData.credentials.shopName,
           provider: 'shopify',
           createdAt: new Date().toISOString()
-        }),
+        },
         status: 'active',
-        metadata: JSON.stringify({
+        metadata: {
           provider: 'shopify',
           shopName: shop.name,
           domain: shop.domain,
           lastSync: new Date(),
           availableDataTypes: ['products', 'orders', 'customers', 'inventory'],
           webhookTopics: this.getWebhookTopics()
-        })
+        }
       });
 
       return dataSource;

@@ -1,4 +1,4 @@
-const { DataTypes } = require('sequelize');
+const { DataTypes, Op } = require('sequelize');
 
 module.exports = (sequelize) => {
   const QueryCache = sequelize.define('QueryCache', {
@@ -48,7 +48,7 @@ module.exports = (sequelize) => {
     const deletedCount = await this.destroy({
       where: {
         expiry: {
-          [sequelize.Sequelize.Op.lt]: now
+          [Op.lt]: now
         }
       }
     });

@@ -20,7 +20,7 @@ class SQLExecutor {
     try {
       // Get data source
       const dataSource = await DataSource.findOne({
-        where: { id: dataSourceId, organization_id: organizationId }
+        where: { id: dataSourceId, org_id: organizationId }
       });
 
       if (!dataSource) {
@@ -232,7 +232,11 @@ class SQLExecutor {
       });
     }
 
-    const connection = await databaseConnector.createConnection(dataSource);
+    const connectionConfig = this.parseConnectionConfig(dataSource);
+    const connection = await databaseConnector.createConnection({
+      type: dataSource.type,
+      ...connectionConfig
+    });
     
     try {
       if (onProgress) {
@@ -263,28 +267,7 @@ class SQLExecutor {
       }
 
       // Process results based on database type
-      let processedResult;
-      if (dataSource.type === 'postgresql') {
-        processedResult = {
-          data: result.rows || [],
-          columns: result.fields ? result.fields.map(field => ({
-            name: field.name,
-            type: field.dataTypeID,
-            nullable: true
-          })) : [],
-          rowCount: result.rowCount || (result.rows ? result.rows.length : 0)
-        };
-      } else if (dataSource.type === 'mysql') {
-        processedResult = {
-          data: Array.isArray(result) ? result : [],
-          columns: result.length > 0 ? Object.keys(result[0]).map(key => ({
-            name: key,
-            type: 'unknown',
-            nullable: true
-          })) : [],
-          rowCount: Array.isArray(result) ? result.length : 0
-        };
-      }
+      const processedResult = this.normalizeQueryResult(result);
 
       // Limit result rows
       if (processedResult.data.length > this.maxResultRows) {
@@ -304,6 +287,37 @@ class SQLExecutor {
 
       return processedResult;
 
+    } finally {
+      await this.closeConnection(connection);
+    }
+  }
+
+  async executeDatabaseQuery(sql, dataSource, options = {}) {
+    const connectionConfig = this.parseConnectionConfig(dataSource);
+    const connection = await databaseConnector.createConnection({
+      type: dataSource.type,
+      ...connectionConfig
+    });
+
+    try {
+      const timeout = options.timeout || this.maxExecutionTime;
+      const queryPromise = connection.query(sql);
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Query timeout exceeded')), timeout);
+      });
+
+      const result = await Promise.race([queryPromise, timeoutPromise]);
+
+      const processedResult = this.normalizeQueryResult(result);
+
+      if (processedResult.data.length > this.maxResultRows) {
+        processedResult.data = processedResult.data.slice(0, this.maxResultRows);
+        processedResult.truncated = true;
+        processedResult.originalRowCount = processedResult.rowCount;
+        processedResult.rowCount = this.maxResultRows;
+      }
+
+      return processedResult;
     } finally {
       await this.closeConnection(connection);
     }
@@ -614,6 +628,77 @@ class SQLExecutor {
     } catch (error) {
       console.error('Error closing connection:', error);
     }
+  }
+
+  normalizeQueryResult(result) {
+    if (Array.isArray(result)) {
+      const rows = Array.isArray(result[0]) ? result[0] : result;
+      return {
+        data: rows || [],
+        columns: rows && rows.length > 0
+          ? Object.keys(rows[0]).map(key => ({
+              name: key,
+              type: 'unknown',
+              nullable: true
+            }))
+          : [],
+        rowCount: rows ? rows.length : 0
+      };
+    }
+
+    if (result && result.rows) {
+      return {
+        data: result.rows || [],
+        columns: result.fields ? result.fields.map(field => ({
+          name: field.name,
+          type: field.dataTypeID,
+          nullable: true
+        })) : [],
+        rowCount: result.rowCount || (result.rows ? result.rows.length : 0)
+      };
+    }
+
+    return { data: [], columns: [], rowCount: 0 };
+  }
+
+  parseConnectionConfig(dataSource) {
+    const raw = dataSource.connection_string;
+    let config = {};
+
+    if (raw) {
+      if (typeof raw === 'object') {
+        config = raw;
+      } else if (typeof raw === 'string') {
+        try {
+          config = JSON.parse(raw);
+        } catch {
+          try {
+            const url = new URL(raw);
+            config = {
+              host: url.hostname,
+              port: url.port ? parseInt(url.port, 10) : undefined,
+              database: url.pathname ? url.pathname.replace(/^\//, '') : undefined,
+              username: decodeURIComponent(url.username || ''),
+              password: decodeURIComponent(url.password || '')
+            };
+          } catch {
+            config = {};
+          }
+        }
+      }
+    }
+
+    if (dataSource.credentials && typeof dataSource.credentials === 'object') {
+      config = { ...config, ...dataSource.credentials };
+    } else if (typeof dataSource.credentials === 'string') {
+      try {
+        config = { ...config, ...JSON.parse(dataSource.credentials) };
+      } catch {
+        // ignore
+      }
+    }
+
+    return config;
   }
 }
 

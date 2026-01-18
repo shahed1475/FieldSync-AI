@@ -306,3 +306,106 @@
 [31m    at Function._load (node:internal/modules/cjs/loader:1128:12)[39m
 [31m    at TracingChannel.traceSync (node:diagnostics_channel:315:14)[39m
 [31m    at wrapModuleLoad (node:internal/modules/cjs/loader:218:24)[39m
+2026-01-18 01:15:36:1536 [31merror[39m: [31muncaughtException: listen EADDRINUSE: address already in use :::8080[39m
+[31mError: listen EADDRINUSE: address already in use :::8080[39m
+[31m    at Server.setupListenHandle [as _listen2] (node:net:1940:16)[39m
+[31m    at listenInCluster (node:net:1997:12)[39m
+[31m    at Server.listen (node:net:2102:7)[39m
+[31m    at startServer (C:\Users\Fahad\Desktop\New folder (2)\FieldSync-AI\FieldSync AI\server.js:223:14)[39m
+[31m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+2026-01-18 03:06:19:619 [31merror[39m: [31muncaughtException: Cannot find module 'ws'[39m
+[31mRequire stack:[39m
+[31m- C:\Users\Fahad\Desktop\New folder (2)\FieldSync-AI\FieldSync AI\services\visualization\realTimeAnalytics.js[39m
+[31m- C:\Users\Fahad\Desktop\New folder (2)\FieldSync-AI\FieldSync AI\routes\visualization.js[39m
+[31m- C:\Users\Fahad\Desktop\New folder (2)\FieldSync-AI\FieldSync AI\server.js[39m
+[31mError: Cannot find module 'ws'[39m
+[31mRequire stack:[39m
+[31m- C:\Users\Fahad\Desktop\New folder (2)\FieldSync-AI\FieldSync AI\services\visualization\realTimeAnalytics.js[39m
+[31m- C:\Users\Fahad\Desktop\New folder (2)\FieldSync-AI\FieldSync AI\routes\visualization.js[39m
+[31m- C:\Users\Fahad\Desktop\New folder (2)\FieldSync-AI\FieldSync AI\server.js[39m
+[31m    at Module._resolveFilename (node:internal/modules/cjs/loader:1421:15)[39m
+[31m    at defaultResolveImpl (node:internal/modules/cjs/loader:1059:19)[39m
+[31m    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1064:22)[39m
+[31m    at Module._load (node:internal/modules/cjs/loader:1227:37)[39m
+[31m    at TracingChannel.traceSync (node:diagnostics_channel:328:14)[39m
+[31m    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)[39m
+[31m    at Module.require (node:internal/modules/cjs/loader:1504:12)[39m
+[31m    at require (node:internal/modules/helpers:152:16)[39m
+[31m    at Object.<anonymous> (C:\Users\Fahad\Desktop\New folder (2)\FieldSync-AI\FieldSync AI\services\visualization\realTimeAnalytics.js:7:19)[39m
+[31m    at Module._compile (node:internal/modules/cjs/loader:1761:14)[39m
+[31m    at Object..js (node:internal/modules/cjs/loader:1893:10)[39m
+[31m    at Module.load (node:internal/modules/cjs/loader:1481:32)[39m
+[31m    at Module._load (node:internal/modules/cjs/loader:1300:12)[39m
+[31m    at TracingChannel.traceSync (node:diagnostics_channel:328:14)[39m
+[31m    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)[39m
+[31m    at Module.require (node:internal/modules/cjs/loader:1504:12)[39m
+2026-01-18 03:07:06:76 [31merror[39m: [31muncaughtException: Cannot find module 'ws'[39m
+[31mRequire stack:[39m
+[31m- C:\Users\Fahad\Desktop\New folder (2)\FieldSync-AI\FieldSync AI\services\visualization\realTimeAnalytics.js[39m
+[31m- C:\Users\Fahad\Desktop\New folder (2)\FieldSync-AI\FieldSync AI\routes\visualization.js[39m
+[31m- C:\Users\Fahad\Desktop\New folder (2)\FieldSync-AI\FieldSync AI\server.js[39m
+[31mError: Cannot find module 'ws'[39m
+[31mRequire stack:[39m
+[31m- C:\Users\Fahad\Desktop\New folder (2)\FieldSync-AI\FieldSync AI\services\visualization\realTimeAnalytics.js[39m
+[31m- C:\Users\Fahad\Desktop\New folder (2)\FieldSync-AI\FieldSync AI\routes\visualization.js[39m
+[31m- C:\Users\Fahad\Desktop\New folder (2)\FieldSync-AI\FieldSync AI\server.js[39m
+[31m    at Module._resolveFilename (node:internal/modules/cjs/loader:1421:15)[39m
+[31m    at defaultResolveImpl (node:internal/modules/cjs/loader:1059:19)[39m
+[31m    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1064:22)[39m
+[31m    at Module._load (node:internal/modules/cjs/loader:1227:37)[39m
+[31m    at TracingChannel.traceSync (node:diagnostics_channel:328:14)[39m
+[31m    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)[39m
+[31m    at Module.require (node:internal/modules/cjs/loader:1504:12)[39m
+[31m    at require (node:internal/modules/helpers:152:16)[39m
+[31m    at Object.<anonymous> (C:\Users\Fahad\Desktop\New folder (2)\FieldSync-AI\FieldSync AI\services\visualization\realTimeAnalytics.js:7:19)[39m
+[31m    at Module._compile (node:internal/modules/cjs/loader:1761:14)[39m
+[31m    at Object..js (node:internal/modules/cjs/loader:1893:10)[39m
+[31m    at Module.load (node:internal/modules/cjs/loader:1481:32)[39m
+[31m    at Module._load (node:internal/modules/cjs/loader:1300:12)[39m
+[31m    at TracingChannel.traceSync (node:diagnostics_channel:328:14)[39m
+[31m    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)[39m
+[31m    at Module.require (node:internal/modules/cjs/loader:1504:12)[39m
+2026-01-18 03:09:14:914 [31merror[39m: [31muncaughtException: Cannot find module 'ws'[39m
+[31mRequire stack:[39m
+[31m- C:\Users\Fahad\Desktop\New folder (2)\FieldSync-AI\FieldSync AI\services\visualization\realTimeAnalytics.js[39m
+[31m- C:\Users\Fahad\Desktop\New folder (2)\FieldSync-AI\FieldSync AI\routes\visualization.js[39m
+[31m- C:\Users\Fahad\Desktop\New folder (2)\FieldSync-AI\FieldSync AI\server.js[39m
+[31mError: Cannot find module 'ws'[39m
+[31mRequire stack:[39m
+[31m- C:\Users\Fahad\Desktop\New folder (2)\FieldSync-AI\FieldSync AI\services\visualization\realTimeAnalytics.js[39m
+[31m- C:\Users\Fahad\Desktop\New folder (2)\FieldSync-AI\FieldSync AI\routes\visualization.js[39m
+[31m- C:\Users\Fahad\Desktop\New folder (2)\FieldSync-AI\FieldSync AI\server.js[39m
+[31m    at Module._resolveFilename (node:internal/modules/cjs/loader:1421:15)[39m
+[31m    at defaultResolveImpl (node:internal/modules/cjs/loader:1059:19)[39m
+[31m    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1064:22)[39m
+[31m    at Module._load (node:internal/modules/cjs/loader:1227:37)[39m
+[31m    at TracingChannel.traceSync (node:diagnostics_channel:328:14)[39m
+[31m    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)[39m
+[31m    at Module.require (node:internal/modules/cjs/loader:1504:12)[39m
+[31m    at require (node:internal/modules/helpers:152:16)[39m
+[31m    at Object.<anonymous> (C:\Users\Fahad\Desktop\New folder (2)\FieldSync-AI\FieldSync AI\services\visualization\realTimeAnalytics.js:7:19)[39m
+[31m    at Module._compile (node:internal/modules/cjs/loader:1761:14)[39m
+[31m    at Object..js (node:internal/modules/cjs/loader:1893:10)[39m
+[31m    at Module.load (node:internal/modules/cjs/loader:1481:32)[39m
+[31m    at Module._load (node:internal/modules/cjs/loader:1300:12)[39m
+[31m    at TracingChannel.traceSync (node:diagnostics_channel:328:14)[39m
+[31m    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)[39m
+[31m    at Module.require (node:internal/modules/cjs/loader:1504:12)[39m
+2026-01-18 03:12:28:1228 [31merror[39m: [31muncaughtException: ChartRecommender is not a constructor[39m
+[31mTypeError: ChartRecommender is not a constructor[39m
+[31m    at Object.<anonymous> (C:\Users\Fahad\Desktop\New folder (2)\FieldSync-AI\FieldSync AI\routes\visualization.js:23:26)[39m
+[31m    at Module._compile (node:internal/modules/cjs/loader:1761:14)[39m
+[31m    at Object..js (node:internal/modules/cjs/loader:1893:10)[39m
+[31m    at Module.load (node:internal/modules/cjs/loader:1481:32)[39m
+[31m    at Module._load (node:internal/modules/cjs/loader:1300:12)[39m
+[31m    at TracingChannel.traceSync (node:diagnostics_channel:328:14)[39m
+[31m    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)[39m
+[31m    at Module.require (node:internal/modules/cjs/loader:1504:12)[39m
+[31m    at require (node:internal/modules/helpers:152:16)[39m
+[31m    at Object.<anonymous> (C:\Users\Fahad\Desktop\New folder (2)\FieldSync-AI\FieldSync AI\server.js:114:43)[39m
+[31m    at Module._compile (node:internal/modules/cjs/loader:1761:14)[39m
+[31m    at Object..js (node:internal/modules/cjs/loader:1893:10)[39m
+[31m    at Module.load (node:internal/modules/cjs/loader:1481:32)[39m
+[31m    at Module._load (node:internal/modules/cjs/loader:1300:12)[39m
+[31m    at TracingChannel.traceSync (node:diagnostics_channel:328:14)[39m
+[31m    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)[39m

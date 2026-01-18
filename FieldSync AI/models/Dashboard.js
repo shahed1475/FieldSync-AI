@@ -23,9 +23,22 @@ module.exports = (sequelize) => {
         len: [2, 100]
       }
     },
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
     layout: {
       type: DataTypes.JSONB,
       defaultValue: {},
+      allowNull: false
+    },
+    created_by: {
+      type: DataTypes.UUID,
+      allowNull: true
+    },
+    tags: {
+      type: DataTypes.JSONB,
+      defaultValue: [],
       allowNull: false
     },
     refresh_schedule: {
@@ -73,6 +86,11 @@ module.exports = (sequelize) => {
     Dashboard.belongsTo(models.Organization, {
       foreignKey: 'org_id',
       as: 'organization'
+    });
+
+    Dashboard.belongsTo(models.User, {
+      foreignKey: 'created_by',
+      as: 'creator'
     });
   };
 

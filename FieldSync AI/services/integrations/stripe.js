@@ -12,14 +12,16 @@ class StripeService {
    * Get valid credentials for a data source
    */
   async getValidCredentials(dataSourceId) {
-    const dataSource = await DataSource.findById(dataSourceId);
+    const dataSource = await DataSource.findByPk(dataSourceId);
     if (!dataSource) {
       throw new Error('Data source not found');
     }
 
     // For Stripe, we typically use API keys which don't expire
     // But we still use this pattern for consistency
-    return dataSource.credentials;
+    return typeof dataSource.credentials === 'string'
+      ? JSON.parse(dataSource.credentials)
+      : dataSource.credentials;
   }
 
   /**
@@ -609,7 +611,7 @@ class StripeService {
       const account = await stripe.account.retrieve();
       
       const dataSource = await DataSource.create({
-        organization_id: organizationId,
+        org_id: organizationId,
         name: connectionData.name || `Stripe - ${account.id}`,
         type: 'stripe',
         connection_string: JSON.stringify({

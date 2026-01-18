@@ -390,7 +390,7 @@ class DatabaseConnectorService {
       const stats = await this.getDatabaseStats(connectionData.config);
 
       const dataSource = await DataSource.create({
-        organization_id: organizationId,
+        org_id: organizationId,
         name: connectionData.name || `${connectionData.config.type} - ${connectionData.config.database}`,
         type: connectionData.config.type,
         connection_string: JSON.stringify({

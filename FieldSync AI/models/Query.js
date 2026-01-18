@@ -23,24 +23,48 @@ module.exports = (sequelize) => {
         key: 'id'
       }
     },
+    user_id: {
+      type: DataTypes.UUID,
+      allowNull: true
+    },
     natural_language: {
       type: DataTypes.TEXT,
       allowNull: false,
       validate: {
         notEmpty: true,
-        len: [10, 1000]
+        len: [5, 1000]
       }
     },
     sql_generated: {
       type: DataTypes.TEXT,
       allowNull: true
     },
+    intent: {
+      type: DataTypes.STRING(100),
+      allowNull: true
+    },
+    confidence: {
+      type: DataTypes.DECIMAL(4, 3),
+      allowNull: true,
+      validate: {
+        min: 0,
+        max: 1
+      }
+    },
     results: {
       type: DataTypes.JSONB,
       allowNull: true
     },
+    row_count: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
     execution_time_ms: {
       type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    metadata: {
+      type: DataTypes.JSONB,
       allowNull: true
     },
     status: {
@@ -89,6 +113,11 @@ module.exports = (sequelize) => {
     Query.belongsTo(models.DataSource, {
       foreignKey: 'data_source_id',
       as: 'dataSource'
+    });
+
+    Query.belongsTo(models.User, {
+      foreignKey: 'user_id',
+      as: 'user'
     });
   };
 

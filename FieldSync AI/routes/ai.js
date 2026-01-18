@@ -12,7 +12,7 @@ const { DataSource } = require('../models');
 // Validation schemas
 const querySchema = Joi.object({
   query: Joi.string().required().min(5).max(1000),
-  dataSourceId: Joi.number().integer().required(),
+  dataSourceId: Joi.string().required(),
   useCache: Joi.boolean().default(true),
   explain: Joi.boolean().default(false),
   streaming: Joi.boolean().default(false)
@@ -20,7 +20,7 @@ const querySchema = Joi.object({
 
 const streamQuerySchema = Joi.object({
   query: Joi.string().required().min(5).max(1000),
-  dataSourceId: Joi.number().integer().required(),
+  dataSourceId: Joi.string().required(),
   useCache: Joi.boolean().default(true),
   explain: Joi.boolean().default(false)
 });
@@ -35,7 +35,7 @@ const feedbackSchema = Joi.object({
 const historyQuerySchema = Joi.object({
   limit: Joi.number().integer().min(1).max(100).default(50),
   offset: Joi.number().integer().min(0).default(0),
-  dataSourceId: Joi.number().integer(),
+  dataSourceId: Joi.string(),
   status: Joi.string().valid('completed', 'failed'),
   intent: Joi.string(),
   startDate: Joi.date().iso(),
@@ -56,13 +56,13 @@ router.post('/query', authenticateToken, async (req, res) => {
     }
 
     const { query, dataSourceId, useCache, explain } = value;
-    const organizationId = req.user.organization_id;
+    const organizationId = req.user.orgId;
 
     // Verify data source access
     const dataSource = await DataSource.findOne({
       where: { 
         id: dataSourceId, 
-        organization_id: organizationId 
+        org_id: organizationId 
       }
     });
 
@@ -75,10 +75,11 @@ router.post('/query', authenticateToken, async (req, res) => {
 
     const startTime = Date.now();
     let queryResult = null;
+    let intentResult = null;
 
     try {
       // Step 1: Intent Detection
-      const intentResult = await intentDetection.classifyQuery(query);
+      intentResult = await intentDetection.classifyQuery(query);
       
       if (intentResult.confidence < 0.3) {
         return res.status(400).json({
@@ -100,7 +101,7 @@ router.post('/query', authenticateToken, async (req, res) => {
         );
         
         if (similarQueries.length > 0) {
-          cachedResult = await queryManager.getCachedResult(similarQueries[0].id);
+          cachedResult = await queryManager.getCachedResult(similarQueries[0].id, organizationId);
         }
       }
 
@@ -109,8 +110,8 @@ router.post('/query', authenticateToken, async (req, res) => {
         queryResult = {
           success: true,
           data: cachedResult.data,
-          columns: cachedResult.columns,
-          rowCount: cachedResult.data.length,
+          columns: cachedResult.columns || [],
+          rowCount: cachedResult.data?.length || 0,
           executionTime: Date.now() - startTime,
           cached: true,
           cachedAt: cachedResult.cached_at,
@@ -119,16 +120,18 @@ router.post('/query', authenticateToken, async (req, res) => {
         };
       } else {
         // Step 3: Generate SQL
-        const sqlResult = await sqlGenerator.generateSQL(query, dataSource, intentResult);
-        
-        if (!sqlResult.success) {
-          throw new Error(sqlResult.error);
-        }
+        const sqlResult = await sqlGenerator.generateSQL(
+          query,
+          intentResult,
+          dataSourceId,
+          organizationId
+        );
 
         // Step 4: Execute SQL
         const executionResult = await sqlExecutor.executeQuery(
-          sqlResult.sql, 
-          dataSource, 
+          sqlResult.sql,
+          dataSourceId,
+          organizationId,
           { timeout: 30000 }
         );
 
@@ -167,7 +170,7 @@ router.post('/query', authenticateToken, async (req, res) => {
         metrics: intentResult.metrics,
         dimensions: intentResult.dimensions,
         optimizations: queryResult.optimizations
-      }, organizationId);
+      }, organizationId, req.user.id);
 
       // Add query ID to response
       queryResult.queryId = savedQuery.id;
@@ -193,7 +196,7 @@ router.post('/query', authenticateToken, async (req, res) => {
         metrics: intentResult?.metrics || [],
         dimensions: intentResult?.dimensions || [],
         dataSourceType: dataSource.type
-      }, organizationId);
+      }, organizationId, req.user.id);
 
       res.status(500).json({
         success: false,
@@ -226,7 +229,7 @@ router.get('/queries', authenticateToken, async (req, res) => {
       });
     }
 
-    const organizationId = req.user.organization_id;
+    const organizationId = req.user.orgId;
     const result = await queryManager.getQueryHistory(organizationId, value);
 
     res.json({
@@ -247,19 +250,13 @@ router.get('/queries', authenticateToken, async (req, res) => {
 // GET /api/ai/queries/:id - Get specific query details
 router.get('/queries/:id', authenticateToken, async (req, res) => {
   try {
-    const queryId = parseInt(req.params.id);
-    if (isNaN(queryId)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid query ID'
-      });
-    }
+    const queryId = req.params.id;
 
-    const organizationId = req.user.organization_id;
+    const organizationId = req.user.orgId;
     const query = await queryManager.getQuery(queryId, organizationId);
 
     // Check for cached results
-    const cachedResult = await queryManager.getCachedResult(queryId);
+    const cachedResult = await queryManager.getCachedResult(queryId, organizationId);
 
     res.json({
       success: true,
@@ -292,21 +289,15 @@ router.get('/queries/:id', authenticateToken, async (req, res) => {
 // GET /api/ai/queries/:id/results - Get cached query results
 router.get('/queries/:id/results', authenticateToken, async (req, res) => {
   try {
-    const queryId = parseInt(req.params.id);
-    if (isNaN(queryId)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid query ID'
-      });
-    }
+    const queryId = req.params.id;
 
-    const organizationId = req.user.organization_id;
+    const organizationId = req.user.orgId;
     
     // Verify query ownership
     const query = await queryManager.getQuery(queryId, organizationId);
     
     // Get cached results
-    const cachedResult = await queryManager.getCachedResult(queryId);
+    const cachedResult = await queryManager.getCachedResult(queryId, organizationId);
     
     if (!cachedResult) {
       return res.status(404).json({
@@ -345,13 +336,7 @@ router.get('/queries/:id/results', authenticateToken, async (req, res) => {
 // POST /api/ai/queries/:id/feedback - Submit query feedback
 router.post('/queries/:id/feedback', authenticateToken, async (req, res) => {
   try {
-    const queryId = parseInt(req.params.id);
-    if (isNaN(queryId)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid query ID'
-      });
-    }
+    const queryId = req.params.id;
 
     const { error, value } = feedbackSchema.validate(req.body);
     if (error) {
@@ -362,7 +347,7 @@ router.post('/queries/:id/feedback', authenticateToken, async (req, res) => {
       });
     }
 
-    const organizationId = req.user.organization_id;
+    const organizationId = req.user.orgId;
     const updatedQuery = await queryManager.updateQueryFeedback(
       queryId, 
       organizationId, 
@@ -396,15 +381,9 @@ router.post('/queries/:id/feedback', authenticateToken, async (req, res) => {
 // DELETE /api/ai/queries/:id - Delete query and cached results
 router.delete('/queries/:id', authenticateToken, async (req, res) => {
   try {
-    const queryId = parseInt(req.params.id);
-    if (isNaN(queryId)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid query ID'
-      });
-    }
+    const queryId = req.params.id;
 
-    const organizationId = req.user.organization_id;
+    const organizationId = req.user.orgId;
     await queryManager.deleteQuery(queryId, organizationId);
 
     res.json({
@@ -443,7 +422,7 @@ router.get('/analytics', authenticateToken, async (req, res) => {
       });
     }
 
-    const organizationId = req.user.organization_id;
+    const organizationId = req.user.orgId;
     const analytics = await queryManager.getQueryAnalytics(organizationId, timeframe);
 
     res.json({
@@ -475,7 +454,7 @@ router.get('/optimization-report', authenticateToken, async (req, res) => {
       });
     }
 
-    const organizationId = req.user.organization_id;
+    const organizationId = req.user.orgId;
     const report = await queryManager.getOptimizationReport(organizationId, timeframe);
 
     res.json({
@@ -499,7 +478,7 @@ router.post('/explain', authenticateToken, async (req, res) => {
   try {
     const { error, value } = Joi.object({
       query: Joi.string().required().min(5).max(1000),
-      dataSourceId: Joi.number().integer().required()
+      dataSourceId: Joi.string().required()
     }).validate(req.body);
 
     if (error) {
@@ -511,13 +490,13 @@ router.post('/explain', authenticateToken, async (req, res) => {
     }
 
     const { query, dataSourceId } = value;
-    const organizationId = req.user.organization_id;
+    const organizationId = req.user.orgId;
 
     // Verify data source access
     const dataSource = await DataSource.findOne({
       where: { 
         id: dataSourceId, 
-        organization_id: organizationId 
+        org_id: organizationId 
       }
     });
 
@@ -534,14 +513,19 @@ router.post('/explain', authenticateToken, async (req, res) => {
     // Generate SQL without executing
     let sqlResult = null;
     if (intentResult.confidence >= 0.3) {
-      sqlResult = await sqlGenerator.generateSQL(query, dataSource, intentResult);
+      sqlResult = await sqlGenerator.generateSQL(
+        query,
+        intentResult,
+        dataSourceId,
+        organizationId
+      );
     }
 
     res.json({
       success: true,
       query,
       intent: intentResult,
-      sql: sqlResult?.success ? {
+      sql: sqlResult ? {
         query: sqlResult.sql,
         explanation: sqlResult.explanation,
         optimizations: sqlResult.optimizations,
@@ -560,8 +544,6 @@ router.post('/explain', authenticateToken, async (req, res) => {
   }
 });
 
-module.exports = router;
-
 // POST /api/ai/query/stream - Process natural language query with streaming response
 router.post('/query/stream', authenticateToken, async (req, res) => {
   try {
@@ -575,14 +557,14 @@ router.post('/query/stream', authenticateToken, async (req, res) => {
     }
 
     const { query, dataSourceId, useCache, explain } = value;
-    const organizationId = req.user.organization_id;
+    const organizationId = req.user.orgId;
     const userId = req.user.id;
 
     // Verify data source access
     const dataSource = await DataSource.findOne({
       where: { 
         id: dataSourceId, 
-        organization_id: organizationId 
+        org_id: organizationId 
       }
     });
 
@@ -604,6 +586,7 @@ router.post('/query/stream', authenticateToken, async (req, res) => {
 
     const streamId = `ai_query_${Date.now()}_${userId}`;
     const startTime = Date.now();
+    let intentResult = null;
 
     // Send initial connection confirmation
     res.write(`data: ${JSON.stringify({
@@ -621,7 +604,7 @@ router.post('/query/stream', authenticateToken, async (req, res) => {
         progress: 10
       })}\n\n`);
 
-      const intentResult = await intentDetection.classifyQuery(query);
+      intentResult = await intentDetection.classifyQuery(query);
       
       if (intentResult.confidence < 0.3) {
         res.write(`data: ${JSON.stringify({
@@ -660,7 +643,7 @@ router.post('/query/stream', authenticateToken, async (req, res) => {
         );
         
         if (similarQueries.length > 0) {
-          cachedResult = await queryManager.getCachedResult(similarQueries[0].id);
+          cachedResult = await queryManager.getCachedResult(similarQueries[0].id, organizationId);
         }
       }
 
@@ -676,8 +659,8 @@ router.post('/query/stream', authenticateToken, async (req, res) => {
         const queryResult = {
           success: true,
           data: cachedResult.data,
-          columns: cachedResult.columns,
-          rowCount: cachedResult.data.length,
+          columns: cachedResult.columns || [],
+          rowCount: cachedResult.data?.length || 0,
           executionTime: Date.now() - startTime,
           cached: true,
           cachedAt: cachedResult.cached_at,
@@ -702,11 +685,12 @@ router.post('/query/stream', authenticateToken, async (req, res) => {
           progress: 40
         })}\n\n`);
 
-        const sqlResult = await sqlGenerator.generateSQL(query, dataSource, intentResult);
-        
-        if (!sqlResult.success) {
-          throw new Error(sqlResult.error);
-        }
+        const sqlResult = await sqlGenerator.generateSQL(
+          query,
+          intentResult,
+          dataSourceId,
+          organizationId
+        );
 
         res.write(`data: ${JSON.stringify({
           type: 'progress',
@@ -785,7 +769,7 @@ router.post('/query/stream', authenticateToken, async (req, res) => {
           metrics: intentResult.metrics,
           dimensions: intentResult.dimensions,
           optimizations: queryResult.optimizations
-        }, organizationId);
+        }, organizationId, userId);
 
         queryResult.queryId = savedQuery.id;
 
@@ -817,7 +801,7 @@ router.post('/query/stream', authenticateToken, async (req, res) => {
         metrics: intentResult?.metrics || [],
         dimensions: intentResult?.dimensions || [],
         dataSourceType: dataSource.type
-      }, organizationId);
+      }, organizationId, userId);
 
       res.write(`data: ${JSON.stringify({
         type: 'error',
@@ -844,3 +828,5 @@ router.post('/query/stream', authenticateToken, async (req, res) => {
     res.end();
   }
 });
+
+module.exports = router;

@@ -468,7 +468,7 @@ class CSVUploadService {
 
       // Create data source record
       const dataSource = await DataSource.create({
-        organization_id: organizationId,
+        org_id: organizationId,
         name: dataSourceName || `CSV Import - ${uploadResult.originalName}`,
         type: 'csv',
         connection_string: JSON.stringify({

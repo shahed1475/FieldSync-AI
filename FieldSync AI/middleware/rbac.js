@@ -267,7 +267,7 @@ const requireResourceOwnership = (resourceType) => {
       }
 
       // Check if user owns the resource or has organization access
-      if (resource.userId !== req.user.id && resource.organizationId !== req.user.orgId) {
+      if (resource.user_id !== req.user.id && resource.org_id !== req.user.orgId) {
         return res.status(403).json({
           success: false,
           message: 'Access denied to this resource',

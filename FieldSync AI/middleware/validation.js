@@ -21,13 +21,50 @@ const schemas = {
   }),
 
   dataSource: Joi.object({
-    type: Joi.string().valid('postgresql', 'mysql', 'mongodb', 'api', 'csv').required(),
-    connection_string: Joi.string().required(),
-    schema: Joi.object().default({})
+    name: Joi.string().max(255).optional(),
+    type: Joi.string().valid(
+      'postgresql',
+      'mysql',
+      'mongodb',
+      'api',
+      'csv',
+      'google_sheets',
+      'quickbooks',
+      'shopify',
+      'stripe'
+    ).required(),
+    connection_string: Joi.alternatives().try(Joi.string(), Joi.object()).allow(null).optional(),
+    schema: Joi.object().default({}),
+    credentials: Joi.object().optional(),
+    metadata: Joi.object().optional(),
+    tags: Joi.array().items(Joi.string()).optional(),
+    status: Joi.string().valid('active', 'inactive', 'error').optional(),
+    is_active: Joi.boolean().optional()
+  }),
+  dataSourceUpdate: Joi.object({
+    name: Joi.string().max(255).optional(),
+    type: Joi.string().valid(
+      'postgresql',
+      'mysql',
+      'mongodb',
+      'api',
+      'csv',
+      'google_sheets',
+      'quickbooks',
+      'shopify',
+      'stripe'
+    ).optional(),
+    connection_string: Joi.alternatives().try(Joi.string(), Joi.object()).allow(null).optional(),
+    schema: Joi.object().optional(),
+    credentials: Joi.object().optional(),
+    metadata: Joi.object().optional(),
+    tags: Joi.array().items(Joi.string()).optional(),
+    status: Joi.string().valid('active', 'inactive', 'error').optional(),
+    is_active: Joi.boolean().optional()
   }),
 
   query: Joi.object({
-    natural_language: Joi.string().min(10).max(1000).required(),
+    natural_language: Joi.string().min(5).max(1000).required(),
     sql_generated: Joi.string().optional(),
     results: Joi.object().optional()
   }),
@@ -39,7 +76,21 @@ const schemas = {
   }),
 
   insight: Joi.object({
-    type: Joi.string().valid('trend', 'anomaly', 'correlation', 'prediction').required(),
+    type: Joi.string().valid(
+      'trend',
+      'anomaly',
+      'correlation',
+      'prediction',
+      'pattern',
+      'forecast',
+      'outlier',
+      'spike',
+      'drop',
+      'volatility',
+      'seasonal',
+      'alert',
+      'performance'
+    ).required(),
     description: Joi.string().min(10).max(500).required(),
     severity: Joi.string().valid('low', 'medium', 'high', 'critical').required()
   })

@@ -70,7 +70,7 @@ class InsightsManager {
       const existingInsight = await this.findSimilarInsight(insightData, organizationId);
       if (existingInsight) {
         // Update existing insight instead of creating duplicate
-        return await this.updateInsight(existingInsight.id, {
+        return await this.updateInsight(existingInsight.id, organizationId, {
           confidence: Math.max(existingInsight.confidence, insightData.confidence || 0),
           last_detected: new Date(),
           detection_count: (existingInsight.detection_count || 1) + 1
@@ -89,7 +89,7 @@ class InsightsManager {
 
       // Create new insight
       const insight = await Insight.create({
-        organization_id: organizationId,
+        org_id: organizationId,
         query_id: insightData.query_id,
         dashboard_id: insightData.dashboard_id,
         data_source_id: insightData.data_source_id,
@@ -101,7 +101,7 @@ class InsightsManager {
         confidence: insightData.confidence || 0,
         actionable: insightData.actionable || false,
         recommendation: insightData.recommendation,
-        metadata: JSON.stringify(metadata),
+        metadata: metadata,
         detected_at: new Date(),
         last_detected: new Date(),
         detection_count: 1
@@ -223,7 +223,7 @@ class InsightsManager {
   async getInsights(organizationId, filters = {}) {
     try {
       const whereClause = {
-        organization_id: organizationId
+        org_id: organizationId
       };
 
       // Apply filters
@@ -275,7 +275,7 @@ class InsightsManager {
           {
             model: Query,
             as: 'query',
-            attributes: ['id', 'natural_language_query', 'sql']
+            attributes: ['id', 'natural_language', 'sql_generated']
           },
           {
             model: Dashboard,
@@ -299,11 +299,9 @@ class InsightsManager {
       // Parse metadata for each insight
       const processedInsights = insights.map(insight => {
         const insightData = insight.toJSON();
-        try {
-          insightData.metadata = JSON.parse(insightData.metadata || '{}');
-        } catch (error) {
-          insightData.metadata = {};
-        }
+        insightData.metadata = typeof insightData.metadata === 'string'
+          ? JSON.parse(insightData.metadata || '{}')
+          : (insightData.metadata || {});
         return insightData;
       });
 
@@ -332,13 +330,13 @@ class InsightsManager {
       const insight = await Insight.findOne({
         where: {
           id: insightId,
-          organization_id: organizationId
+          org_id: organizationId
         },
         include: [
           {
             model: Query,
             as: 'query',
-            attributes: ['id', 'natural_language_query', 'sql']
+            attributes: ['id', 'natural_language', 'sql_generated']
           },
           {
             model: Dashboard,
@@ -360,12 +358,10 @@ class InsightsManager {
         };
       }
 
-      const insightData = insight.toJSON();
-      try {
-        insightData.metadata = JSON.parse(insightData.metadata || '{}');
-      } catch (error) {
-        insightData.metadata = {};
-      }
+        const insightData = insight.toJSON();
+        insightData.metadata = typeof insightData.metadata === 'string'
+          ? JSON.parse(insightData.metadata || '{}')
+          : (insightData.metadata || {});
 
       return {
         success: true,
@@ -386,9 +382,14 @@ class InsightsManager {
    * @param {Object} updates - Update data
    * @returns {Object} Update result
    */
-  async updateInsight(insightId, updates) {
+  async updateInsight(insightId, organizationId, updates) {
     try {
-      const insight = await Insight.findByPk(insightId);
+      const insight = await Insight.findOne({
+        where: {
+          id: insightId,
+          org_id: organizationId
+        }
+      });
       if (!insight) {
         return {
           success: false,
@@ -446,7 +447,7 @@ class InsightsManager {
       const result = await Insight.destroy({
         where: {
           id: insightId,
-          organization_id: organizationId
+          org_id: organizationId
         }
       });
 
@@ -479,7 +480,7 @@ class InsightsManager {
   async getInsightsSummary(organizationId, timeRange = {}) {
     try {
       const whereClause = {
-        organization_id: organizationId
+        org_id: organizationId
       };
 
       if (timeRange.start && timeRange.end) {
@@ -575,7 +576,7 @@ class InsightsManager {
       // Get recent period insights
       const recentInsights = await Insight.count({
         where: {
-          organization_id: organizationId,
+          org_id: organizationId,
           detected_at: {
             [Op.between]: [midDate.toDate(), endDate.toDate()]
           }
@@ -585,7 +586,7 @@ class InsightsManager {
       // Get previous period insights
       const previousInsights = await Insight.count({
         where: {
-          organization_id: organizationId,
+          org_id: organizationId,
           detected_at: {
             [Op.between]: [startDate.toDate(), midDate.toDate()]
           }
@@ -629,7 +630,7 @@ class InsightsManager {
       };
 
       if (organizationId) {
-        whereClause.organization_id = organizationId;
+        whereClause.org_id = organizationId;
       }
 
       const deletedCount = await Insight.destroy({
@@ -756,7 +757,7 @@ class InsightsManager {
       // Look for similar insights within the last 24 hours
       const similarInsight = await Insight.findOne({
         where: {
-          organization_id: organizationId,
+          org_id: organizationId,
           type: insightData.type,
           title: insightData.title,
           query_id: insightData.query_id,

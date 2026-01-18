@@ -58,7 +58,7 @@ class SQLGenerator {
         this.primaryProvider = availableProviders[0];
         console.warn(`Primary LLM provider not available, using ${this.primaryProvider}`);
       } else {
-        throw new Error('No LLM providers configured. Please set OPENAI_API_KEY or Azure OpenAI credentials.');
+        this.primaryProvider = null;
       }
     }
   }
@@ -66,6 +66,10 @@ class SQLGenerator {
   async generateSQL(query, intent, dataSourceId, organizationId) {
     const startTime = Date.now();
     let lastError = null;
+
+    if (!this.primaryProvider) {
+      throw new Error('No LLM providers configured. Please set OPENAI_API_KEY or Azure OpenAI credentials.');
+    }
 
     // Try primary provider first, then fallback providers
     const providers = [this.primaryProvider, ...Object.keys(this.providers).filter(p => p !== this.primaryProvider)];
@@ -79,7 +83,7 @@ class SQLGenerator {
         
         // Get data source schema
         const dataSource = await DataSource.findOne({
-          where: { id: dataSourceId, organization_id: organizationId }
+          where: { id: dataSourceId, org_id: organizationId }
         });
 
         if (!dataSource) {
@@ -206,14 +210,15 @@ Generate an optimized SQL query that answers this question. Consider the detecte
 
   async getDataSourceSchema(dataSource) {
     try {
-      const config = JSON.parse(dataSource.config);
-      
+      const config = this.parseConnectionConfig(dataSource);
+      const schema = this.parseSchemaField(dataSource.schema);
+
       switch (dataSource.type) {
         case 'postgresql':
         case 'mysql':
-          return await this.getDatabaseSchema(dataSource);
+          return await this.getDatabaseSchema(dataSource, config);
         case 'google_sheets':
-          return this.getGoogleSheetsSchema(config);
+          return this.getGoogleSheetsSchema(config, schema);
         case 'shopify':
           return this.getShopifySchema();
         case 'stripe':
@@ -221,7 +226,7 @@ Generate an optimized SQL query that answers this question. Consider the detecte
         case 'quickbooks':
           return this.getQuickBooksSchema();
         case 'csv':
-          return this.getCSVSchema(config);
+          return this.getCSVSchema(config, schema);
         default:
           throw new Error(`Unsupported data source type: ${dataSource.type}`);
       }
@@ -231,24 +236,29 @@ Generate an optimized SQL query that answers this question. Consider the detecte
     }
   }
 
-  async getDatabaseSchema(dataSource) {
+  async getDatabaseSchema(dataSource, config) {
     const databaseConnector = require('../integrations/databaseConnector');
     try {
-      const connection = await databaseConnector.createConnection(dataSource);
-      const tables = await databaseConnector.getTables(connection, dataSource.type);
+      const connectionConfig = {
+        type: dataSource.type,
+        ...config
+      };
+      const tables = await databaseConnector.getTables(connectionConfig);
       
       const schema = { tables: [], relationships: [] };
       
       for (const table of tables) {
-        const tableSchema = await databaseConnector.getTableSchema(connection, table.name, dataSource.type);
+        const tableSchema = await databaseConnector.detectTableSchema(
+          connectionConfig,
+          table.name,
+          table.schema || null
+        );
         schema.tables.push({
           name: table.name,
-          columns: tableSchema.columns,
-          sample_data: tableSchema.sample_data?.slice(0, 3) || []
+          columns: tableSchema.schema,
+          sample_data: tableSchema.sampleData?.slice(0, 3) || []
         });
       }
-      
-      await databaseConnector.closeConnection(connection, dataSource.type);
       return schema;
     } catch (error) {
       console.error('Database schema error:', error);
@@ -256,7 +266,10 @@ Generate an optimized SQL query that answers this question. Consider the detecte
     }
   }
 
-  getGoogleSheetsSchema(config) {
+  getGoogleSheetsSchema(config, schemaOverride) {
+    if (schemaOverride && schemaOverride.tables) {
+      return schemaOverride;
+    }
     return {
       tables: [{
         name: config.sheet_name || 'sheet_data',
@@ -388,7 +401,10 @@ Generate an optimized SQL query that answers this question. Consider the detecte
     };
   }
 
-  getCSVSchema(config) {
+  getCSVSchema(config, schemaOverride) {
+    if (schemaOverride && schemaOverride.tables) {
+      return schemaOverride;
+    }
     return {
       tables: [{
         name: config.table_name || 'csv_data',
@@ -397,6 +413,41 @@ Generate an optimized SQL query that answers this question. Consider the detecte
       }],
       relationships: []
     };
+  }
+
+  parseConnectionConfig(dataSource) {
+    const raw = dataSource.connection_string;
+    if (!raw) return {};
+
+    if (typeof raw === 'object') return raw;
+    if (typeof raw !== 'string') return {};
+
+    try {
+      return JSON.parse(raw);
+    } catch (error) {
+      try {
+        const url = new URL(raw);
+        return {
+          host: url.hostname,
+          port: url.port ? parseInt(url.port, 10) : undefined,
+          database: url.pathname ? url.pathname.replace(/^\//, '') : undefined,
+          username: decodeURIComponent(url.username || ''),
+          password: decodeURIComponent(url.password || '')
+        };
+      } catch {
+        return {};
+      }
+    }
+  }
+
+  parseSchemaField(schemaField) {
+    if (!schemaField) return null;
+    if (typeof schemaField === 'object') return schemaField;
+    try {
+      return JSON.parse(schemaField);
+    } catch (error) {
+      return null;
+    }
   }
 
   async validateAndFormatSQL(sql, dataSourceType) {

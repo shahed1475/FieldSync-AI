@@ -25,7 +25,9 @@ class GoogleSheetsService {
         throw new Error('Data source not found or missing credentials');
       }
 
-      const credentials = JSON.parse(dataSource.credentials);
+      const credentials = typeof dataSource.credentials === 'string'
+        ? JSON.parse(dataSource.credentials)
+        : (dataSource.credentials || {});
       
       // Get valid access token (will refresh if needed)
       const validAccessToken = await this.oauthManager.getValidAccessToken(dataSourceId);
@@ -256,14 +258,14 @@ class GoogleSheetsService {
   async saveConnection(organizationId, connectionData) {
     try {
       const dataSource = await DataSource.create({
-        organization_id: organizationId,
+        org_id: organizationId,
         name: connectionData.name || 'Google Sheets Connection',
         type: 'google_sheets',
         connection_string: JSON.stringify({
           spreadsheetId: connectionData.spreadsheetId,
           sheetName: connectionData.sheetName
         }),
-        credentials: JSON.stringify({
+        credentials: {
           accessToken: connectionData.accessToken,
           refreshToken: connectionData.refreshToken,
           expiresAt: connectionData.expiresAt,
@@ -272,14 +274,14 @@ class GoogleSheetsService {
           scope: connectionData.scope,
           tokenType: connectionData.tokenType || 'Bearer',
           lastRefreshed: new Date().toISOString()
-        }),
+        },
         status: 'active',
-        metadata: JSON.stringify({
+        metadata: {
           provider: 'google',
           lastSync: new Date(),
           totalRows: connectionData.totalRows || 0,
           schema: connectionData.schema || []
-        })
+        }
       });
 
       return dataSource;

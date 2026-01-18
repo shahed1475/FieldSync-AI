@@ -161,7 +161,7 @@ router.get('/data-sources', authenticateToken, async (req, res) => {
     const { page = 1, limit = 20, type, status, search } = req.query;
     const offset = (page - 1) * limit;
 
-    const whereClause = { organization_id: req.user.organizationId };
+    const whereClause = { org_id: req.user.orgId };
     
     if (type) whereClause.type = type;
     if (status) whereClause.status = status;
@@ -207,7 +207,7 @@ router.get('/data-sources/:id', authenticateToken, async (req, res) => {
     const dataSource = await DataSource.findOne({
       where: {
         id: req.params.id,
-        organization_id: req.user.organizationId
+        org_id: req.user.orgId
       }
     });
 
@@ -675,7 +675,7 @@ router.post('/data-sources/:id/sync', authenticateToken, async (req, res) => {
     const dataSource = await DataSource.findOne({
       where: {
         id: req.params.id,
-        organization_id: req.user.organizationId
+        org_id: req.user.orgId
       }
     });
 
@@ -748,7 +748,7 @@ router.put('/data-sources/:id', authenticateToken, async (req, res) => {
     const dataSource = await DataSource.findOne({
       where: {
         id: req.params.id,
-        organization_id: req.user.organizationId
+        org_id: req.user.orgId
       }
     });
 
@@ -766,11 +766,13 @@ router.put('/data-sources/:id', authenticateToken, async (req, res) => {
     if (status) updateData.status = status;
     
     if (tags) {
-      const metadata = JSON.parse(dataSource.metadata);
-      updateData.metadata = JSON.stringify({
+      const metadata = typeof dataSource.metadata === 'string'
+        ? JSON.parse(dataSource.metadata || '{}')
+        : (dataSource.metadata || {});
+      updateData.metadata = {
         ...metadata,
         tags
-      });
+      };
     }
 
     await dataSource.update(updateData);
@@ -798,7 +800,7 @@ router.delete('/data-sources/:id', authenticateToken, async (req, res) => {
     const dataSource = await DataSource.findOne({
       where: {
         id: req.params.id,
-        organization_id: req.user.organizationId
+        org_id: req.user.orgId
       }
     });
 

@@ -15,21 +15,50 @@ module.exports = (sequelize) => {
         key: 'id'
       }
     },
+    name: {
+      type: DataTypes.STRING(255),
+      allowNull: true
+    },
     type: {
-      type: DataTypes.ENUM('postgresql', 'mysql', 'mongodb', 'api', 'csv'),
+      type: DataTypes.ENUM(
+        'postgresql',
+        'mysql',
+        'mongodb',
+        'api',
+        'csv',
+        'google_sheets',
+        'quickbooks',
+        'shopify',
+        'stripe'
+      ),
       allowNull: false
     },
     connection_string: {
       type: DataTypes.TEXT,
-      allowNull: false,
-      validate: {
-        notEmpty: true
-      }
+      allowNull: true
     },
     schema: {
       type: DataTypes.JSONB,
       defaultValue: {},
       allowNull: false
+    },
+    credentials: {
+      type: DataTypes.JSONB,
+      allowNull: true
+    },
+    metadata: {
+      type: DataTypes.JSONB,
+      defaultValue: {},
+      allowNull: false
+    },
+    tags: {
+      type: DataTypes.JSONB,
+      defaultValue: [],
+      allowNull: false
+    },
+    status: {
+      type: DataTypes.ENUM('active', 'inactive', 'error'),
+      defaultValue: 'active'
     },
     is_active: {
       type: DataTypes.BOOLEAN,

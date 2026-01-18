@@ -156,7 +156,7 @@ class VisualizationScheduler {
           const schedule = dashboard.refresh_schedule;
           
           if (this.shouldRefreshDashboard(dashboard, now)) {
-            await this.autoRefresh.refreshDashboard(dashboard.id, dashboard.organization_id);
+            await this.autoRefresh.refreshDashboard(dashboard.id, dashboard.org_id);
             refreshCount++;
             
             console.log(`Refreshed dashboard ${dashboard.id} (${dashboard.name})`);
@@ -248,7 +248,7 @@ class VisualizationScheduler {
                 context: {
                   queryId: query.id,
                   dataSourceType: query.dataSource.type,
-                  organizationId: query.organization_id
+                  organizationId: query.org_id
                 }
               }
             );
@@ -258,7 +258,7 @@ class VisualizationScheduler {
               for (const insight of analysis.insights) {
                 await this.insightsManager.storeInsight({
                   ...insight,
-                  organizationId: query.organization_id,
+                  organizationId: query.org_id,
                   queryId: query.id,
                   dataSourceId: query.data_source_id,
                   metadata: {
@@ -296,8 +296,8 @@ class VisualizationScheduler {
       
       // Get all active organizations
       const organizations = await Dashboard.findAll({
-        attributes: ['organization_id'],
-        group: ['organization_id'],
+        attributes: ['org_id'],
+        group: ['org_id'],
         where: {
           is_active: true,
           created_at: {
@@ -308,9 +308,9 @@ class VisualizationScheduler {
 
       for (const org of organizations) {
         try {
-          await this.performOrganizationAnalysis(org.organization_id, yesterday);
+          await this.performOrganizationAnalysis(org.org_id, yesterday);
         } catch (error) {
-          console.error(`Failed daily analysis for organization ${org.organization_id}:`, error);
+          console.error(`Failed daily analysis for organization ${org.org_id}:`, error);
         }
       }
       
@@ -327,7 +327,7 @@ class VisualizationScheduler {
     // Get queries from the past 24 hours
     const queries = await Query.findAll({
       where: {
-        organization_id: organizationId,
+        org_id: organizationId,
         created_at: {
           [Op.gte]: analysisDate
         },

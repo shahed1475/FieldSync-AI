@@ -111,14 +111,10 @@ app.use('/api/insights', apiLimiter, require('./routes/insights'));
 app.use('/api/analytics', apiLimiter, require('./routes/analytics'));
 app.use('/api/integrations', apiLimiter, require('./routes/integrations'));
 app.use('/api/ai', queryLimiter, require('./routes/ai'));
+app.use('/api/visualization', apiLimiter, require('./routes/visualization'));
 
 // Serve static files from root directory for development
 app.use(express.static(__dirname));
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
-});
 
 // Default route for root
 app.get('/', (req, res) => {

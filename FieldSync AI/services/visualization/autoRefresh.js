@@ -162,14 +162,14 @@ class AutoRefreshService {
         throw new Error('Dashboard not found');
       }
 
-      const layout = JSON.parse(dashboard.layout);
+      const layout = typeof dashboard.layout === 'string' ? JSON.parse(dashboard.layout) : dashboard.layout;
       const refreshResults = [];
 
       // Refresh each widget that has a data source
       for (const widget of layout.widgets) {
         if (widget.dataSource && widget.dataSource.queryId) {
           try {
-            const widgetResult = await this.refreshWidget(widget, dashboard.organization_id);
+            const widgetResult = await this.refreshWidget(widget, dashboard.org_id);
             refreshResults.push({
               widgetId: widget.id,
               success: true,
@@ -239,7 +239,7 @@ class AutoRefreshService {
       const query = await Query.findOne({
         where: {
           id: widget.dataSource.queryId,
-          organization_id: organizationId
+          org_id: organizationId
         }
       });
 
@@ -397,7 +397,7 @@ class AutoRefreshService {
       const dashboard = await Dashboard.findOne({
         where: {
           id: dashboardId,
-          organization_id: organizationId
+          org_id: organizationId
         }
       });
 

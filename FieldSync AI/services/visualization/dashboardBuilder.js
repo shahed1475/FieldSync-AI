@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const { Op } = require('sequelize');
 const { Dashboard, Query } = require('../../models');
 
 /**
@@ -97,9 +98,9 @@ class DashboardBuilder {
       const dashboard = await Dashboard.create({
         name: dashboardData.name,
         description: dashboardData.description || '',
-        layout: JSON.stringify(layout),
+        layout: layout,
         refresh_schedule: dashboardData.refreshSchedule || null,
-        organization_id: organizationId,
+        org_id: organizationId,
         created_by: dashboardData.createdBy,
         is_public: dashboardData.isPublic || false,
         tags: dashboardData.tags || []
@@ -118,6 +119,78 @@ class DashboardBuilder {
     }
   }
 
+  async getDashboards(organizationId, options = {}) {
+    const { page = 1, limit = 10, search } = options;
+    const offset = (page - 1) * limit;
+    const whereClause = { org_id: organizationId };
+
+    if (search) {
+      whereClause[Op.or] = [
+        { name: { [Op.iLike]: `%${search}%` } },
+        { description: { [Op.iLike]: `%${search}%` } }
+      ];
+    }
+
+    const { count, rows } = await Dashboard.findAndCountAll({
+      where: whereClause,
+      order: [['created_at', 'DESC']],
+      limit,
+      offset
+    });
+
+    return {
+      total: count,
+      dashboards: rows.map(d => ({
+        ...d.toJSON(),
+        layout: typeof d.layout === 'string' ? JSON.parse(d.layout) : d.layout
+      }))
+    };
+  }
+
+  async getDashboard(dashboardId, organizationId) {
+    const dashboard = await Dashboard.findOne({
+      where: { id: dashboardId, org_id: organizationId }
+    });
+    if (!dashboard) return null;
+    return {
+      ...dashboard.toJSON(),
+      layout: typeof dashboard.layout === 'string' ? JSON.parse(dashboard.layout) : dashboard.layout
+    };
+  }
+
+  async updateDashboard(dashboardId, organizationId, updates = {}) {
+    const dashboard = await Dashboard.findOne({
+      where: { id: dashboardId, org_id: organizationId }
+    });
+    if (!dashboard) return null;
+
+    const updateData = {};
+    if (updates.name) updateData.name = updates.name;
+    if (updates.description !== undefined) updateData.description = updates.description;
+    if (updates.refresh_schedule) updateData.refresh_schedule = updates.refresh_schedule;
+    if (updates.is_public !== undefined) updateData.is_public = updates.is_public;
+    if (updates.tags) updateData.tags = updates.tags;
+
+    if (updates.layout) {
+      const validationResult = this.validateLayout(updates.layout);
+      if (!validationResult.valid) {
+        throw new Error(validationResult.error);
+      }
+      updateData.layout = updates.layout;
+    }
+
+    await dashboard.update(updateData);
+
+    return this.getDashboardWithLayout(dashboardId);
+  }
+
+  async deleteDashboard(dashboardId, organizationId) {
+    const deleted = await Dashboard.destroy({
+      where: { id: dashboardId, org_id: organizationId }
+    });
+    return deleted > 0;
+  }
+
   /**
    * Update dashboard layout
    * @param {string} dashboardId - Dashboard ID
@@ -130,7 +203,7 @@ class DashboardBuilder {
       const dashboard = await Dashboard.findOne({
         where: {
           id: dashboardId,
-          organization_id: organizationId
+          org_id: organizationId
         }
       });
 
@@ -152,7 +225,7 @@ class DashboardBuilder {
 
       // Update layout
       await dashboard.update({
-        layout: JSON.stringify(layout),
+        layout: layout,
         updated_at: new Date()
       });
 
@@ -181,7 +254,7 @@ class DashboardBuilder {
       const dashboard = await Dashboard.findOne({
         where: {
           id: dashboardId,
-          organization_id: organizationId
+          org_id: organizationId
         }
       });
 
@@ -192,7 +265,7 @@ class DashboardBuilder {
         };
       }
 
-      const layout = JSON.parse(dashboard.layout);
+      const layout = typeof dashboard.layout === 'string' ? JSON.parse(dashboard.layout) : dashboard.layout;
       
       // Generate widget configuration
       const widget = this.generateWidgetConfig(widgetConfig);
@@ -206,7 +279,7 @@ class DashboardBuilder {
 
       // Update dashboard
       await dashboard.update({
-        layout: JSON.stringify(layout),
+        layout: layout,
         updated_at: new Date()
       });
 
@@ -237,7 +310,7 @@ class DashboardBuilder {
       const dashboard = await Dashboard.findOne({
         where: {
           id: dashboardId,
-          organization_id: organizationId
+          org_id: organizationId
         }
       });
 
@@ -248,7 +321,7 @@ class DashboardBuilder {
         };
       }
 
-      const layout = JSON.parse(dashboard.layout);
+      const layout = typeof dashboard.layout === 'string' ? JSON.parse(dashboard.layout) : dashboard.layout;
       const widgetIndex = layout.widgets.findIndex(w => w.id === widgetId);
 
       if (widgetIndex === -1) {
@@ -276,7 +349,7 @@ class DashboardBuilder {
 
       // Save changes
       await dashboard.update({
-        layout: JSON.stringify(layout),
+        layout: layout,
         updated_at: new Date()
       });
 
@@ -306,7 +379,7 @@ class DashboardBuilder {
       const dashboard = await Dashboard.findOne({
         where: {
           id: dashboardId,
-          organization_id: organizationId
+          org_id: organizationId
         }
       });
 
@@ -317,7 +390,7 @@ class DashboardBuilder {
         };
       }
 
-      const layout = JSON.parse(dashboard.layout);
+      const layout = typeof dashboard.layout === 'string' ? JSON.parse(dashboard.layout) : dashboard.layout;
       const initialCount = layout.widgets.length;
       
       // Remove widget
@@ -335,7 +408,7 @@ class DashboardBuilder {
 
       // Save changes
       await dashboard.update({
-        layout: JSON.stringify(layout),
+        layout: layout,
         updated_at: new Date()
       });
 
@@ -363,7 +436,7 @@ class DashboardBuilder {
 
     return {
       ...dashboard.toJSON(),
-      layout: JSON.parse(dashboard.layout)
+      layout: typeof dashboard.layout === 'string' ? JSON.parse(dashboard.layout) : dashboard.layout
     };
   }
 
@@ -583,7 +656,7 @@ class DashboardBuilder {
       const sourceDashboard = await Dashboard.findOne({
         where: {
           id: dashboardId,
-          organization_id: organizationId
+          org_id: organizationId
         }
       });
 
@@ -594,7 +667,7 @@ class DashboardBuilder {
         };
       }
 
-      const layout = JSON.parse(sourceDashboard.layout);
+      const layout = typeof sourceDashboard.layout === 'string' ? JSON.parse(sourceDashboard.layout) : sourceDashboard.layout;
       
       // Generate new widget IDs
       layout.widgets.forEach(widget => {
@@ -606,9 +679,9 @@ class DashboardBuilder {
       const clonedDashboard = await Dashboard.create({
         name: newName,
         description: `Copy of ${sourceDashboard.name}`,
-        layout: JSON.stringify(layout),
+        layout: layout,
         refresh_schedule: sourceDashboard.refresh_schedule,
-        organization_id: organizationId,
+        org_id: organizationId,
         created_by: sourceDashboard.created_by,
         is_public: false,
         tags: sourceDashboard.tags
@@ -645,7 +718,7 @@ class DashboardBuilder {
     try {
       const dashboard = await this.getDashboardWithLayout(dashboardId);
       
-      if (!dashboard || dashboard.organization_id !== organizationId) {
+      if (!dashboard || dashboard.org_id !== organizationId) {
         return {
           success: false,
           error: 'Dashboard not found'
@@ -707,8 +780,8 @@ class DashboardBuilder {
       const dashboard = await Dashboard.create({
         name: importData.name,
         description: importData.description || 'Imported dashboard',
-        layout: JSON.stringify(importData.layout),
-        organization_id: organizationId,
+        layout: importData.layout,
+        org_id: organizationId,
         created_by: createdBy,
         is_public: false,
         tags: importData.tags || []

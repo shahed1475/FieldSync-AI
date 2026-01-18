@@ -23,7 +23,7 @@ router.get('/', async (req, res) => {
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [['created_at', 'DESC']],
-      attributes: { exclude: ['connection_string'] } // Hide sensitive connection info
+      attributes: { exclude: ['connection_string', 'credentials'] } // Hide sensitive connection info
     });
     
     res.json({
@@ -49,7 +49,7 @@ router.get('/:id', async (req, res) => {
         id: req.params.id,
         org_id: req.user.organizationId 
       },
-      attributes: { exclude: ['connection_string'] } // Hide sensitive connection info
+      attributes: { exclude: ['connection_string', 'credentials'] } // Hide sensitive connection info
     });
     
     if (!dataSource) {
@@ -66,17 +66,33 @@ router.get('/:id', async (req, res) => {
 // POST /api/data-sources - Create new data source
 router.post('/', validate(schemas.dataSource), async (req, res) => {
   try {
-    const { type, connection_string, schema } = req.body;
+    const {
+      name,
+      type,
+      connection_string,
+      schema,
+      credentials,
+      metadata,
+      tags,
+      status,
+      is_active
+    } = req.body;
     
     const dataSource = await DataSource.create({
       org_id: req.user.organizationId,
+      name,
       type,
       connection_string,
-      schema: schema || {}
+      schema: schema || {},
+      credentials,
+      metadata,
+      tags,
+      status,
+      is_active
     });
     
     // Return without sensitive connection string
-    const { connection_string: _, ...safeDataSource } = dataSource.toJSON();
+    const { connection_string: _, credentials: __, ...safeDataSource } = dataSource.toJSON();
     
     res.status(201).json({
       message: 'Data source created successfully',
@@ -89,12 +105,40 @@ router.post('/', validate(schemas.dataSource), async (req, res) => {
 });
 
 // PUT /api/data-sources/:id - Update data source
-router.put('/:id', validate(schemas.dataSource), async (req, res) => {
+router.put('/:id', validate(schemas.dataSourceUpdate), async (req, res) => {
   try {
-    const { type, connection_string, schema } = req.body;
+    const {
+      name,
+      type,
+      connection_string,
+      schema,
+      credentials,
+      metadata,
+      tags,
+      status,
+      is_active
+    } = req.body;
+
+    const updateData = {
+      name,
+      type,
+      connection_string,
+      schema,
+      credentials,
+      metadata,
+      tags,
+      status,
+      is_active
+    };
+    
+    Object.keys(updateData).forEach((key) => {
+      if (updateData[key] === undefined) {
+        delete updateData[key];
+      }
+    });
     
     const [updatedRowsCount] = await DataSource.update(
-      { type, connection_string, schema },
+      updateData,
       { 
         where: { 
           id: req.params.id,
@@ -108,7 +152,7 @@ router.put('/:id', validate(schemas.dataSource), async (req, res) => {
     }
     
     const updatedDataSource = await DataSource.findByPk(req.params.id, {
-      attributes: { exclude: ['connection_string'] }
+      attributes: { exclude: ['connection_string', 'credentials'] }
     });
     
     res.json({

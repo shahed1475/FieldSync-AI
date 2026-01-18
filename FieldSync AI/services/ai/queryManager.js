@@ -9,7 +9,7 @@ class QueryManager {
     this.maxCacheSize = 1000; // Maximum number of cached queries
   }
 
-  async saveQuery(queryData, organizationId) {
+  async saveQuery(queryData, organizationId, userId = null) {
     try {
       // Analyze query performance if SQL is available
       let optimizationAnalysis = null;
@@ -22,31 +22,36 @@ class QueryManager {
         );
       }
 
+      const metadata = {
+        entities: queryData.entities,
+        timeframe: queryData.timeframe,
+        metrics: queryData.metrics,
+        dimensions: queryData.dimensions,
+        columns: queryData.columns,
+        optimizations: queryData.optimizations,
+        optimization_analysis: optimizationAnalysis
+      };
+
       const query = await Query.create({
-        organization_id: organizationId,
-        natural_language_query: queryData.naturalLanguage,
-        generated_sql: queryData.sql,
+        org_id: organizationId,
+        user_id: userId,
+        data_source_id: queryData.dataSourceId,
+        natural_language: queryData.naturalLanguage,
+        sql_generated: queryData.sql,
         intent: queryData.intent,
         confidence: queryData.confidence,
-        data_source_id: queryData.dataSourceId,
-        execution_time: queryData.executionTime,
+        results: queryData.success ? { data: queryData.data, columns: queryData.columns } : null,
+        execution_time_ms: queryData.executionTime,
         row_count: queryData.rowCount,
         status: queryData.success ? 'completed' : 'failed',
         error_message: queryData.error || null,
-        metadata: JSON.stringify({
-          entities: queryData.entities,
-          timeframe: queryData.timeframe,
-          metrics: queryData.metrics,
-          dimensions: queryData.dimensions,
-          columns: queryData.columns,
-          optimizations: queryData.optimizations,
-          optimization_analysis: optimizationAnalysis
-        })
+        metadata
       });
 
       // Store results in cache if successful
       if (queryData.success && queryData.data) {
-        await this.cacheQueryResult(query.id, queryData.data, queryData.columns);
+        const queryHash = this.generateCacheKey(queryData.naturalLanguage, organizationId, queryData.dataSourceId);
+        await this.cacheQueryResult(queryHash, { data: queryData.data, columns: queryData.columns });
       }
 
       return query;
@@ -61,7 +66,7 @@ class QueryManager {
       const query = await Query.findOne({
         where: { 
           id: queryId, 
-          organization_id: organizationId 
+          org_id: organizationId 
         },
         include: [
           {
@@ -76,12 +81,7 @@ class QueryManager {
       }
 
       // Parse metadata
-      let metadata = {};
-      try {
-        metadata = JSON.parse(query.metadata || '{}');
-      } catch (e) {
-        console.warn('Failed to parse query metadata:', e);
-      }
+      const metadata = query.metadata || {};
 
       return {
         ...query.toJSON(),
@@ -106,7 +106,7 @@ class QueryManager {
         search
       } = options;
 
-      const whereClause = { organization_id: organizationId };
+      const whereClause = { org_id: organizationId };
 
       if (dataSourceId) {
         whereClause.data_source_id = dataSourceId;
@@ -128,8 +128,8 @@ class QueryManager {
 
       if (search) {
         whereClause[Op.or] = [
-          { natural_language_query: { [Op.iLike]: `%${search}%` } },
-          { generated_sql: { [Op.iLike]: `%${search}%` } }
+          { natural_language: { [Op.iLike]: `%${search}%` } },
+          { sql_generated: { [Op.iLike]: `%${search}%` } }
         ];
       }
 
@@ -147,19 +147,10 @@ class QueryManager {
       });
 
       return {
-        queries: queries.rows.map(query => {
-          let metadata = {};
-          try {
-            metadata = JSON.parse(query.metadata || '{}');
-          } catch (e) {
-            console.warn('Failed to parse query metadata:', e);
-          }
-          
-          return {
-            ...query.toJSON(),
-            metadata
-          };
-        }),
+        queries: queries.rows.map(query => ({
+          ...query.toJSON(),
+          metadata: query.metadata || {}
+        })),
         total: queries.count,
         limit,
         offset
@@ -170,22 +161,14 @@ class QueryManager {
     }
   }
 
-  async cacheQueryResult(queryId, data, columns) {
+  async cacheQueryResult(queryHash, results) {
     try {
-      const cacheKey = this.generateCacheKey(queryId);
-      
       // Clean up old cache entries if we're at the limit
       await this.cleanupCache();
 
-      await QueryCache.create({
-        cache_key: cacheKey,
-        query_id: queryId,
-        result_data: JSON.stringify(data),
-        columns: JSON.stringify(columns),
-        expires_at: new Date(Date.now() + this.cacheExpiryTime)
-      });
+      await QueryCache.setCache(queryHash, results, Math.floor(this.cacheExpiryTime / 60000));
 
-      return cacheKey;
+      return queryHash;
     } catch (error) {
       console.error('Error caching query result:', error);
       // Don't throw error for caching failures
@@ -193,25 +176,24 @@ class QueryManager {
     }
   }
 
-  async getCachedResult(queryId) {
+  async getCachedResult(queryIdOrHash, organizationId = null) {
     try {
-      const cacheKey = this.generateCacheKey(queryId);
-      
-      const cached = await QueryCache.findOne({
-        where: {
-          cache_key: cacheKey,
-          expires_at: { [Op.gt]: new Date() }
-        }
-      });
-
-      if (!cached) {
-        return null;
+      let cacheKey = queryIdOrHash;
+      if (organizationId) {
+        const query = await Query.findOne({
+          where: { id: queryIdOrHash, org_id: organizationId }
+        });
+        if (!query) return null;
+        cacheKey = this.generateCacheKey(query.natural_language, organizationId, query.data_source_id);
       }
 
+      const cached = await QueryCache.getCached(cacheKey);
+      if (!cached) return null;
+
       return {
-        data: JSON.parse(cached.result_data),
-        columns: JSON.parse(cached.columns),
-        cached_at: cached.created_at
+        data: cached.data || cached.results || cached,
+        columns: cached.columns || [],
+        cached_at: new Date().toISOString()
       };
     } catch (error) {
       console.error('Error retrieving cached result:', error);
@@ -227,30 +209,21 @@ class QueryManager {
 
       const similarQueries = await Query.findAll({
         where: {
-          organization_id: organizationId,
+          org_id: organizationId,
           data_source_id: dataSourceId,
           status: 'completed',
-          natural_language_query: {
-            [Op.iRegexp]: keywordPattern
+          natural_language: {
+            [Op.iLike]: `%${keywords[0] || naturalLanguageQuery}%`
           }
         },
         order: [['created_at', 'DESC']],
         limit
       });
 
-      return similarQueries.map(query => {
-        let metadata = {};
-        try {
-          metadata = JSON.parse(query.metadata || '{}');
-        } catch (e) {
-          console.warn('Failed to parse query metadata:', e);
-        }
-        
-        return {
-          ...query.toJSON(),
-          metadata
-        };
-      });
+      return similarQueries.map(query => ({
+        ...query.toJSON(),
+        metadata: query.metadata || {}
+      }));
     } catch (error) {
       console.error('Error finding similar queries:', error);
       return [];
@@ -263,14 +236,14 @@ class QueryManager {
       
       const analytics = await Query.findAll({
         where: {
-          organization_id: organizationId,
+          org_id: organizationId,
           created_at: { [Op.gte]: startDate }
         },
         attributes: [
           'status',
           'intent',
           'data_source_id',
-          'execution_time',
+          'execution_time_ms',
           'row_count',
           'created_at'
         ],
@@ -292,19 +265,14 @@ class QueryManager {
   async updateQueryFeedback(queryId, organizationId, feedback) {
     try {
       const query = await Query.findOne({
-        where: { id: queryId, organization_id: organizationId }
+        where: { id: queryId, org_id: organizationId }
       });
 
       if (!query) {
         throw new Error('Query not found');
       }
 
-      let metadata = {};
-      try {
-        metadata = JSON.parse(query.metadata || '{}');
-      } catch (e) {
-        console.warn('Failed to parse existing metadata:', e);
-      }
+      const metadata = query.metadata || {};
 
       metadata.feedback = {
         ...metadata.feedback,
@@ -312,9 +280,7 @@ class QueryManager {
         updated_at: new Date()
       };
 
-      await query.update({
-        metadata: JSON.stringify(metadata)
-      });
+      await query.update({ metadata });
 
       return query;
     } catch (error) {
@@ -323,8 +289,9 @@ class QueryManager {
     }
   }
 
-  generateCacheKey(queryId) {
-    return crypto.createHash('md5').update(`query_${queryId}`).digest('hex');
+  generateCacheKey(queryText, organizationId, dataSourceId) {
+    const basis = `${organizationId || 'org'}:${dataSourceId || 'ds'}:${queryText || ''}`.toLowerCase();
+    return crypto.createHash('sha256').update(basis).digest('hex');
   }
 
   async cleanupCache() {
@@ -338,20 +305,20 @@ class QueryManager {
         const oldestEntries = await QueryCache.findAll({
           order: [['created_at', 'ASC']],
           limit: removeCount,
-          attributes: ['id']
+          attributes: ['query_hash']
         });
 
-        const idsToRemove = oldestEntries.map(entry => entry.id);
+        const hashesToRemove = oldestEntries.map(entry => entry.query_hash);
         
         await QueryCache.destroy({
-          where: { id: { [Op.in]: idsToRemove } }
+          where: { query_hash: { [Op.in]: hashesToRemove } }
         });
       }
 
       // Also remove expired entries
       await QueryCache.destroy({
         where: {
-          expires_at: { [Op.lt]: new Date() }
+          expiry: { [Op.lt]: new Date() }
         }
       });
     } catch (error) {
@@ -434,13 +401,13 @@ class QueryManager {
       analytics.daily_counts[date] = (analytics.daily_counts[date] || 0) + 1;
 
       // Execution time metrics
-      if (query.execution_time && query.execution_time > 0) {
-        totalExecutionTime += query.execution_time;
+      if (query.execution_time_ms && query.execution_time_ms > 0) {
+        totalExecutionTime += query.execution_time_ms;
         validExecutionTimes++;
 
-        if (query.execution_time < 1000) {
+        if (query.execution_time_ms < 1000) {
           analytics.performance_metrics.fast_queries++;
-        } else if (query.execution_time < 5000) {
+        } else if (query.execution_time_ms < 5000) {
           analytics.performance_metrics.medium_queries++;
         } else {
           analytics.performance_metrics.slow_queries++;
@@ -477,21 +444,17 @@ class QueryManager {
       
       const queries = await Query.findAll({
         where: {
-          organization_id: organizationId,
+          org_id: organizationId,
           created_at: { [Op.gte]: startDate },
           status: 'completed',
-          generated_sql: { [Op.ne]: null }
+          sql_generated: { [Op.ne]: null }
         },
-        attributes: ['metadata', 'execution_time', 'row_count']
+        attributes: ['metadata', 'execution_time_ms', 'row_count']
       });
 
       const analyses = queries.map(query => {
-        try {
-          const metadata = JSON.parse(query.metadata || '{}');
-          return metadata.optimization_analysis;
-        } catch (e) {
-          return null;
-        }
+        const metadata = query.metadata || {};
+        return metadata.optimization_analysis;
       }).filter(analysis => analysis !== null);
 
       return queryOptimizer.generateOptimizationReport(analyses);
@@ -504,7 +467,7 @@ class QueryManager {
   async deleteQuery(queryId, organizationId) {
     try {
       const query = await Query.findOne({
-        where: { id: queryId, organization_id: organizationId }
+        where: { id: queryId, org_id: organizationId }
       });
 
       if (!query) {
@@ -512,9 +475,8 @@ class QueryManager {
       }
 
       // Delete associated cache entries
-      await QueryCache.destroy({
-        where: { query_id: queryId }
-      });
+      const cacheKey = this.generateCacheKey(query.natural_language, organizationId, query.data_source_id);
+      await QueryCache.destroy({ where: { query_hash: cacheKey } });
 
       // Delete the query
       await query.destroy();
